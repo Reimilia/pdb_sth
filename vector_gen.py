@@ -30,9 +30,9 @@ class vector_generator:
                         max(xyz[:, 2]) - middle[2], middle[2] - min(xyz[:, 2]))
             assert scale <= 10
 
-            xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 10, middle[0] + 9, 20),
-                                 np.linspace(middle[1] - 10, middle[1] + 9, 20),
-                                 np.linspace(middle[2] - 10, middle[2] + 9, 20))
+            xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
+                                 np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
+                                 np.linspace(middle[2] - 9.5, middle[2] + 9.5, 20))
 
 
             #print xx
@@ -56,7 +56,7 @@ class vector_generator:
                 num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getIndex()
                 dic[str(atom.getIndex())] = atom.getCoords()
                 pos_list.append([vector[0][0]+x_pos,vector[0][1]+y_pos,vector[0][2]+z_pos])
-                #print x_pos,y_pos,z_pos
+                print pos_list[-1]
             newhetero = AtomGroup('Hetero')
             newhetero.setCoords(np.array(pos_list,dtype=float))
             #print newhetero.__repr__()
