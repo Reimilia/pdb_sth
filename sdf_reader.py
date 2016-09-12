@@ -3,12 +3,18 @@ __author__ = 'wy'
 from rdkit import Chem
 import json
 import os, io
+import time
+from functools import wraps
 
 '''
 Basic example of how to use rdkit library
 need to first install it follow the instruction on its website
 
 '''
+
+
+
+
 
 def query_specific_field(src , key, value=None):
     '''
@@ -75,15 +81,13 @@ if __name__ == '__main__':
 
     #Both are correct usage
 
-
     sdf = Chem.SDMolSupplier('BindingDBSampleBig.sdf')
     filtered_result = query_specific_field(sdf, 'PDB ID(s) for Ligand-Target Complex', '2H6T')
-
-    filtered_result = query_specific_field('BindingDBSampleBig.sdf', 'PDB ID(s) for Ligand-Target Complex', '2H6T')
-
-
+    '''
     #Test
-    #You need to manually change the address to see what's going on
+
+
+
     sdf = Chem.SDMolSupplier('/media/wy/data/BindingDB_All_terse_3D.sdf')
     count =0
     for mol in sdf:
@@ -92,7 +96,6 @@ if __name__ == '__main__':
     print count
 
 
-    # Basic usage if this library
     for mol in filtered_result:
         # This will show how to get protery names , basic info in a molecule class
         # For more info, see the website of rdkit
@@ -117,3 +120,4 @@ if __name__ == '__main__':
         print mol.GetBondBetweenAtoms(0, 1).GetBondType()
 
         # This is useless for getting info
+    '''
