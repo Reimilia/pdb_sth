@@ -11,12 +11,6 @@ PROTEIN_PART = 2
 
 CONFIDENCE = 0.85
 
-fileHandler = logging.FileHandler('debug.log')
-fileHandler.setLevel(logging.WARNING)
-formatter = logging.Formatter('LINE %(lineno)-4d  %(levelname)-8s %(message)s', '%m-%d %H:%M')
-fileHandler.setFormatter(formatter)
-logging.getLogger('').addHandler(fileHandler)
-
 class vector_generator:
     def __init__(self, PDBname, **kwargs):
         parse = parsePDB(PDBname)
@@ -85,12 +79,17 @@ class vector_generator:
 
 
 class pdb_container:
-    def __init__(self,PDB,**kwargs):
+    def __init__(self,PDB,filepos=None,**kwargs):
         self.PDBname= PDB
         self.heterodict = {}
+
         try:
-            parse = parsePDB(PDB)
+            if filepos is not None:
+                parse = parsePDB(filepos)
+            else:
+                parse = parsePDB(PDB)
         except:
+            #raise IOError
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
             return
         hetero = parse.select('not protein and not nucleic and not water')
@@ -151,12 +150,15 @@ class pdb_container:
                 for atom in nearby.iterAtoms():
                     x, y, z = atom.getCoords()
                     x_pos = int(round(x - vector[0][0]))
-                    assert 0 <= x_pos <= 19
+                    #assert 0 <= x_pos <= 19
                     y_pos = int(round(y - vector[0][1]))
-                    assert 0 <= y_pos <= 19
+                    #assert 0 <= y_pos <= 19
                     z_pos = int(round(z - vector[0][2]))
-                    assert 0 <= z_pos <= 19
-                    num_vector[x_pos * 400 + y_pos * 20 + z_pos] = PROTEIN_PART
+                    #assert 0 <= z_pos <= 19
+                    if 0<=x_pos<=19 and 0<=y_pos<=19 and 0<=z_pos<=19:
+                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] = PROTEIN_PART
+                    else:
+                        logging.warning('Coorinate {} {} {} found'.format(x_pos,y_pos,z_pos))
 
                 #filename2= 'data/{}_{}_2.pdb'.format(PDB, ResId)
 
@@ -174,7 +176,7 @@ class pdb_container:
         Find the ligands that is highly possible to be the same compounds
         the default confidence is 0.85
         the score was based on tanimoto scoring method
-        :param sdf_filedir:
+        :param sdf_filedir:l
         :param kwargs:
         :return:
         '''
@@ -185,13 +187,11 @@ class pdb_container:
         possible_ones=[]
 
         for k,v in self.heterodict.items():
-            if sdf_filedir[0]!='/':
-                sdf_filedir = '/'+sdf_filedir
-
             try:
-                command = os.popen('babel {0}{1} {0}/{2} -ofpt'.format(os.getcwd(), sdf_filedir,v['filename']))
+                command = os.popen('babel {0}/{1} {0}/{2} -ofpt'.format(os.getcwd(),sdf_filedir,v['filename']))
                 cp = re.split('=|\n', command.read())[2]
             except:
+                raise TypeError
                 #sdf = Chem.SDMolSupplier(sdf_filedir)
                 #w = Chem.SDWriter('data/{}.sdf'.format(v['filename']), 'w')
                 #for mol in sdf:
