@@ -220,7 +220,7 @@ if __name__ == '__main__':
         else:
             #Not exists, download from the internet
             urllib.urlretrieve(url_prefix+'{}.pdb.gz'.format(pdb.lower()),filename)
-            #Wait for 1 second from rejectio on connection.
+            #Wait for 1 second from rejection on connection.
             time.sleep(1)
 
             # This is to check whether we download the file successfully

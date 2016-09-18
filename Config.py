@@ -9,6 +9,9 @@ filedir_PREFIX=  '/home/ubuntu/sdfdata/raw_data/'
 #where pdb files or zip files are
 pdb_PREFIX = '/home/ubuntu/sdfdata/pdb_raw/'
 
+#where csv result files are
+result_PREFIX = '/home/wy/Documents/'
+
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"
 
