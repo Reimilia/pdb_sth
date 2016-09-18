@@ -137,7 +137,7 @@ class pdb_container:
         the default confidence is 0.85
         the score was based on tanimoto scoring method
         :param sdf_filedir: where the source sdf file is. In theory, if we are using openbabel
-                            it is of even if the file is not sdf, but it should only contain single
+                            it is ok even if the file is not sdf, but it should only contain single
                             molecules, other wise this function cannot get right result
         :param kwargs:
         :return:
