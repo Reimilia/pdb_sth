@@ -7,6 +7,7 @@ from vector_gen import pdb_container
 import time
 from functools import wraps
 import logging
+from Config import *
 
 '''
 The main program to extract molecules in .sdf files and compare with ligands on PDB files.
@@ -20,29 +21,7 @@ formatter = logging.Formatter('LINE %(lineno)-4d  %(levelname)-8s %(message)s', 
 fileHandler.setFormatter(formatter)
 logging.getLogger('').addHandler(fileHandler)
 
-#The place where constants are defined
-# TODO use a config.py to Store all data we need
 
-#the prefix where to download a pdb files.
-#I simply assume the format will be [url_prefix][PDB_name].pdb.gz, i.e.
-#This website address will eventually download something.
-url_prefix = 'https://files.rcsb.org/download/'
-
-#Sorry for the naming confusion, this is the location where the input sdf files (splitted with pdb name) are
-filedir_PREFIX=  '/home/ubuntu/sdfdata/raw_data/'
-
-#where pdb files or zip files are
-pdb_PREFIX = '/media/wy/data/pdb_raw'
-
-#This is what we want to know, but not used in this program
-MUST = "PDB ID(s) for Ligand-Target Complex"
-
-#Thought to be the name, but not, its just some ID
-NAME = 'BindingDB Reactant_set_id'
-
-# How many columns will the output csv files have
-Total_columns= 12
-key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
 
 
 def fn_timer(function):
