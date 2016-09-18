@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from vector_gen import pdb_container
-from rdkit import Chem
-from rdkit.Chem import AllChem
 
 '''
 basically, when u run like that, the file will all generated.
