@@ -8,6 +8,8 @@ import time
 from functools import wraps
 import logging
 from Config import *
+import urllib
+import time
 
 '''
 The main program to extract molecules in .sdf files and compare with ligands on PDB files.
@@ -15,6 +17,7 @@ Then accept all pairs with similarity >= 0.85 and generate the corresponding vec
 '''
 
 #This part is used to set debug log
+#This will generate a log that record every content logged with a specific security levels
 fileHandler = logging.FileHandler('debug.log',mode='w')
 fileHandler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('LINE %(lineno)-4d  %(levelname)-8s %(message)s', '%m-%d %H:%M')
@@ -27,8 +30,9 @@ logging.getLogger('').addHandler(fileHandler)
 def fn_timer(function):
     '''
     This is the decorator used for time counting issue
+    Need not understand this one. It has nothing to do with generating files
     :param function:
-    :return: no return. just print and record the time the devorated program ran.
+    :return: no return. just print and record the time the decorated program ran.
     '''
     @wraps(function)
     def function_timer(*args, **kwargs):
@@ -48,30 +52,31 @@ def fn_timer(function):
 
 
 @fn_timer
-def mol_ligand_tar_generator(src):
+def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
     '''
-    This program will search sdf file in the specific location or search in group
-    and pick up the specific field u want from the extension part in a single entry
-    of a sdf file or a group
-
-    From now on it only supports basic one-field search
 
     :param src: pdb name
-    :return: no return, output will be in a .csv file with format : filter_[src].csv
+    :param statistic_csv: the report csv file's name
+    :param CLEAN: Wipe temporary pdb files or not. Note I will not give options to wipe results. That's dangerous
+    :return: True: If everything works fine
+             False: Unexpected error happens. Note if there is no reuslt, it will return True because everything runs fine.
     '''
 
-    #Wipe the data space:
-    '''files = os.listdir('data/')
-    for filename in files:
-        loc = os.path.join('data/') + filename
-        if os.path.exists(loc):
-            os.remove(loc)'''
+    #Wipe the pdb temporary files if you wish:
+    if CLEAN:
+        files = os.listdir('data/')
+        for filename in files:
+            loc = os.path.join('data/') + filename
+            if os.path.exists(loc):
+                os.remove(loc)
 
     # write the result
-    filedir = 'result/filter_{}'.format(src.split('/')[-1].split('.')[0])+'.csv'
+
+    result_file_name ='filter_{}'.format(src.split('/')[-1].split('.')[0])+'.csv'
+    filedir = os.path.join(result_PREFIX,result_file_name)
     if not os.path.isfile(filedir):
-        if not os.path.exists('result'):
-            os.mkdir('result')
+        if not os.path.exists(result_PREFIX):
+            os.mkdir(result_PREFIX)
 
     # in case for overwriting
     if os.path.exists(filedir):
@@ -87,6 +92,8 @@ def mol_ligand_tar_generator(src):
     # combine as file direction
     sdfone = filedir_PREFIX + src.upper() + '.sdf'
 
+    #open the source molecule files
+    #Naming format [PDB name].sdf all lowercase
     try:
         input_sdf = open(sdfone,'r')
     except:
@@ -97,10 +104,8 @@ def mol_ligand_tar_generator(src):
 
 
     # This variables are used for counting and statistic issue.
-    # TODO generate auto report using these numbers
     active_count=0
     count=0
-    pdb_num=0
     bad_one=0
 
     # Combine as pdb file address
@@ -178,68 +183,80 @@ def mol_ligand_tar_generator(src):
         logging.error('Unknown error here!')
         return False
     logging.warning('{} bad ligands found'.format(bad_one))
-    logging.warning('{} proteins are used'.format(pdb_num))
     logging.warning('{} molecules are detected, and {} pairs are recorded.'.format(count,active_count))
 
     writer.flush()
     writer.close()
+
+    #Do some record
+    if statistic_csv is not None:
+        writer = file(statistic_csv, 'ab')
+        w = csv.writer(writer)
+        w.writerow([src,count,count-bad_one,bad_one,active_count])
+        writer.flush()
+        writer.close()
     return True
 
+def do_one_pdb(pdb,REPORTCSV=None):
+    '''
+    For each target-complex pdb , this program check if .pdb file exists
+    if not ,download first then call the function to match all possible target-ligands with
+    molecules in sdf files in one single pdb
+    :param pdb:name
+    :parameter REPORTCSV: sometimes generate a list of report with the filename this one
+    :return:
+    '''
+
+    # For each pdb name , there should be one corresponding molecule files.
+    # This will generate one result file.
+    pdb = pdb.lower()
+    filename = os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb))
+    if os.path.exists(filename):
+        # pdbfile exists
+        logging.info(pdb + ' has already exists')
+        return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV)
+
+    else:
+        # Not exists, download from the internet
+        urllib.urlretrieve(url_prefix + '{}.pdb.gz'.format(pdb.lower()), filename)
+        # Wait for 1 second from rejection on connection.
+        time.sleep(1)
+
+        # This is to check whether we download the file successfully
+        o = open(filename, 'r')
+        for l in o:
+            if l.find('DOCTYPE') != -1:
+                print 'download {} failed'.format(pdb)
+                logging.error('download {} failed'.format(pdb))
+                return False
+            else:
+                #If we download files successfully, then we will run the program
+                print 'download {} successfully'.format(pdb)
+                logging.info('download {} successfully'.format(pdb))
+                return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV)
+        o.close()
+
+def initiate_report():
+    csv_name = 'report.csv'
+    writer = file(csv_name, 'wb')
+    w = csv.writer(writer)
+    w.writerow(['filename','pdb Name','molecules','paired','bad_one','pairtimes'])
+    return csv_name
 
 if __name__ == '__main__':
-
-    #Test
-    #ToDo Write a filemerger to merge all filter csv files into a desired bigone
-    #ToDo Write a function or improve exising functions to combine the result from the same chemical compound.
-    #ToDo Wrap as a function
-
-    from Config import PDB_tar
-    import urllib
-    import time
 
     DONE=[]
     FAIL=[]
     ct=0
-
+    report = initiate_report()
 
     for pdb in PDB_tar:
 
-        #For each pdb name , there should be one corresponding molecule files.
-        #This will generate one result file.
-        pdb=pdb.lower()
-        filename ='pdb_raw/{}.pdb.gz'.format(pdb)
-        if os.path.exists(filename):
-            #pdbfile exists
-            print pdb+ ' has downloaded'
-            tag=mol_ligand_tar_generator(pdb)
-            if tag:
-                DONE.append(pdb)
-            else:
-                FAIL.append(pdb)
-            ct += 1
+        if do_one_pdb(pdb,REPORTCSV=report):
+            DONE.append(pdb)
         else:
-            #Not exists, download from the internet
-            urllib.urlretrieve(url_prefix+'{}.pdb.gz'.format(pdb.lower()),filename)
-            #Wait for 1 second from rejection on connection.
-            time.sleep(1)
-
-            # This is to check whether we download the file successfully
-            o = open(filename, 'r')
-            for l in o:
-                if l.find('DOCTYPE') != -1:
-                    print 'download {} failed'.format(pdb)
-                    FAIL.append(pdb)
-                    break
-                else:
-                    print 'download {} successfully'.format(pdb)
-                    tag=mol_ligand_tar_generator(pdb)
-                    if tag:
-                        DONE.append(pdb)
-                    else:
-                        FAIL.append(pdb)
-                    break
-            o.close()
+            FAIL.append(pdb)
+        ct+=1
 
     print ct
     logging.info('total: {}'.format(ct))
-    #Todo: Use DONE and FAIL wisely (generate a report)

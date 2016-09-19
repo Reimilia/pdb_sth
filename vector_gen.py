@@ -43,6 +43,9 @@ class pdb_container:
         hetero = parse.select('not protein and not nucleic and not water')
         other = parse.select('protein or nucleic')
 
+        print hetero.numAtoms()
+        print other.numAtoms()
+
         # bad one (no hetero or protein)
         if hetero is None or other is None:
             return
@@ -51,6 +54,7 @@ class pdb_container:
         #Their values will be stored in a dict
         for pick_one in HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
+            print 'here'
             if pick_one.numAtoms() <= 3:
                 continue
 
@@ -63,7 +67,9 @@ class pdb_container:
             if not os.path.isfile(filename):
                 if not os.path.exists('data'):
                     os.mkdir('data')
-            writePDB(filename, pick_one)
+
+            if not os.path.exists(filename):
+                writePDB(filename, pick_one)
 
             # Get coordinate of center
             xyz = pick_one.getCoords()
@@ -73,12 +79,18 @@ class pdb_container:
                         max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
                         max(xyz[:, 2]) - middle[2], middle[2] - min(xyz[:, 2]))
 
-            # Todo shift the center of box to avoid out-of-scale assertion activated
             # assert scale <= 10
             if scale>10:
                 logging.warning('Warning! {} has a ligand out of box scale with {} atom distance to center'.format(PDB, scale))
-                #ignore them for now
-                continue
+                #Now shifting the boxes:
+                max_scale = max(max(xyz[:, 0]) - min(xyz[:, 0]),
+                        max(xyz[:, 1])- min(xyz[:, 1]),
+                        max(xyz[:, 2]) - min(xyz[:, 2]))
+                if max_scale>20:
+                    logging.error('Assertion failed, {} has a ligand out of box completely with scale'.format(PDB,scale))
+                    continue
+                #Try to move to the new center
+                middle =  [(max(xyz[:, 0])+ min(xyz[:, 0]))/2,(max(xyz[:, 1])+min(xyz[:, 1]))/2,(max(xyz[:, 2])+min(xyz[:, 2]))/2]
 
             xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
                                      np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
@@ -123,7 +135,7 @@ class pdb_container:
                 #filename2= 'data/{}_{}_2.pdb'.format(PDB, ResId)
                 #writePDB(filename2, pick_one+nearby)
 
-            #Save into the dict
+            #Save into the dict for future locating
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
                 'center': middle,
@@ -142,8 +154,6 @@ class pdb_container:
         :param kwargs:
         :return:
         '''
-
-        #TODO make this program smart enough to pick similar ones from lots of input.
 
         assert isinstance(sdf_filedir,str)
         if not os.path.exists(sdf_filedir) or sdf_filedir.split('.')[-1]!='sdf':
@@ -166,8 +176,27 @@ class pdb_container:
 
         return possible_ones
 
+    def self_generating(self):
+        from Config import result_PREFIX,NAME,key
+        import csv
+        filename= 'fake_{}.csv'.format(self.PDBname)
+        writer = file(os.path.join(result_PREFIX+filename), 'wb')
+        w = csv.writer(writer)
+        w.writerow(['Name', NAME, 'Target PDB', 'ResIndex', 'Similarity'] + key + ['Vector'])
+
+        for k,v in self.heterodict.items():
+            line = ['sth', 'NA', self.PDBname, 'NA', 'NA' ] + ['NA']*len(key) + [v['raw_vector']]
+            w.writerow(line)
+        writer.flush()
+        writer.close()
+
+
     def pick_one(self, ResId, **kwargs):
         return self.heterodict[ResId] or None
 
     def list_ResId(self):
         return self.heterodict.keys()
+
+    def __repr__(self):
+        print self.PDBname+'({} hetero parts found)'.format(len(self.heterodict.keys()))
+

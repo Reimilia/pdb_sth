@@ -1,39 +1,15 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from vector_gen import pdb_container
+from fileparser import do_one_pdb
+from Config import pdb_PREFIX
+import os,sys,io
+import gzip
 
-'''
-basically, when u run like that, the file will all generated.
-when using get_one method, both vector and filename will return back to u
+PDB_tar=['1hck']
 
-generator = vector_gen.vector_generator('examplePDB.pdb')
+do_one_pdb('1hck')
 
-list, filename = generator.get_one()
+for pdb in PDB_tar:
 
-print list
-print filename
-
-count = sum(list)
-print count
-'''
-
-# this is for debugging, forget about that
-'''
-box = np.array(list).reshape([20,20,20])
-scatter = [[i,j,k] for i in range(0,20) for j in range(0,20) for k in range(0,20) if box[i,j,k]!=0]
-boxes = np.array(scatter)
-boxes = boxes + generator.middles[data_set]
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-xs = boxes[:,0]
-ys = boxes[:,1]
-zs = boxes[:,2]
-ax.scatter(xs, ys, zs )
-plt.show()
-'''
-
-A=pdb_container('1C5O')
-key= A.list_ResId()
-
-for k in key:
-    print A.pick_one(k)
+    with gzip.open(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb))) as f:
+        for line in f:
+            #print line
+            pass
