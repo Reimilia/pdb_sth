@@ -12,6 +12,19 @@ pdb_PREFIX = '/media/wy/data/pdb_raw/'
 #where csv result files are
 result_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result'
 
+#where we store fake docing source pdb files
+#Suppose there should be
+fake_src_PREFIX = '/media/wy/data/all/'
+
+#where we store fake docing pdb result files
+fake_hetero_PREFIX = '/media/wy/data/set/set/'
+
+#where we store output csv files
+fake_result_PREFIX = '/media/wy/data/result/'
+
+#name of fake pdb files
+fake_pdb_name = 'receptor.pdb'
+
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"
 

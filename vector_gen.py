@@ -22,7 +22,7 @@ PROTEIN_PART = 2
 CONFIDENCE = 0.85
 
 class pdb_container:
-    def __init__(self,PDB,filepos=None,**kwargs):
+    def __init__(self,PDB,filepos=None,OUT=True,**kwargs):
         self.PDBname= PDB
         self.heterodict = {}
 
@@ -40,7 +40,7 @@ class pdb_container:
             return
 
         # magic for selection desired atom group (see instruction of prody)
-        hetero = parse.select('not protein and not nucleic and not water')
+        hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
         other = parse.select('protein or nucleic')
 
         print hetero.numAtoms()
@@ -60,14 +60,16 @@ class pdb_container:
             ResId = str(pick_one.getResindex())
 
             # Extract this ligand from protein (as input for openbabel)
-
-            filename = 'data/{}_{}.pdb'.format(PDB, ResId)
+            if filepos is not None:
+                filename = 'data/{}_{}.pdb'.format(filepos.split('/')[-1], ResId)
+            else:
+                filename = 'data/{}_{}.pdb'.format(PDB, ResId)
 
             if not os.path.isfile(filename):
                 if not os.path.exists('data'):
                     os.mkdir('data')
 
-            if not os.path.exists(filename):
+            if OUT and not os.path.exists(filename):
                 writePDB(filename, pick_one)
 
             # Get coordinate of center
@@ -124,11 +126,11 @@ class pdb_container:
                     #assert 0 <= y_pos <= 19
                     z_pos = int(round(z - vector[0][2]))
                     #assert 0 <= z_pos <= 19
-                    if 0<=x_pos<=19 and 0<=y_pos<=19 and 0<=z_pos<=19:
+                    if 0<=x_pos<=19 and 0<=y_pos<=19 and 0<=z_pos<=19 and num_vector[x_pos * 400 + y_pos * 20 + z_pos]==0:
                         #Simply change here to fulfill the mark as 'C_2'
                         num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getElement()+'_'+str(PROTEIN_PART)
                     else:
-                        logging.warning('Coorinate {} {} {} found'.format(x_pos,y_pos,z_pos))
+                        logging.warning('Coorinate {} {} {} found at {}'.format(x_pos,y_pos,z_pos,self.PDBname))
 
                 #This is for checking the correctness when we add atoms in proteins.
                 #filename2= 'data/{}_{}_2.pdb'.format(PDB, ResId)
@@ -163,7 +165,7 @@ class pdb_container:
         for k,v in self.heterodict.items():
             try:
                 #print 'babel {0}/{1} {0}/{2} -ofpt'.format(os.getcwd(),sdf_filedir,v['filename'])
-                command = os.popen('babel {0}/{1} {0}/{2} -ofpt'.format(os.getcwd(),sdf_filedir,v['filename']))
+                command = os.popen('babel {0}/{1} {0}/{2} -ofpt -xfFP4'.format(os.getcwd(),sdf_filedir,v['filename']))
                 #print command.read()
                 cp = re.split('=|\n', command.read())[2]
             except:
@@ -178,20 +180,6 @@ class pdb_container:
 
         return possible_ones
 
-    def self_generating(self):
-        from Config import result_PREFIX,NAME,key
-        import csv
-        filename= 'fake_{}.csv'.format(self.PDBname)
-        writer = file(os.path.join(result_PREFIX+filename), 'wb')
-        w = csv.writer(writer)
-        w.writerow(['Name', NAME, 'Target PDB', 'ResIndex', 'Similarity'] + key + ['Vector'])
-
-        for k,v in self.heterodict.items():
-            line = ['sth', 'NA', self.PDBname, 'NA', 'NA' ] + ['NA']*len(key) + [v['raw_vector']]
-            w.writerow(line)
-        writer.flush()
-        writer.close()
-
 
     def pick_one(self, ResId, **kwargs):
         return self.heterodict[ResId] or None
@@ -201,4 +189,145 @@ class pdb_container:
 
     def __repr__(self):
         print self.PDBname+'({} hetero parts found)'.format(len(self.heterodict.keys()))
+
+
+class fake_pdb_container:
+    def __init__(self,PDB,filepos=None):
+        self.PDBname = PDB
+        self.heterodict = {}
+
+        # filepos is to determine whether we download pdb files from wwPDB
+        # or use what we have
+        # Using downloaded is better
+        try:
+            if filepos is not None:
+                parse = parsePDB(filepos)
+            else:
+                parse = parsePDB(PDB)
+        except:
+            # raise IOError
+            logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
+            return
+
+        self.protein = parse.select('not water')
+        print self.protein.numAtoms()
+
+
+    def self_generating(self):
+        from Config import fake_result_PREFIX,NAME,key
+        import csv
+        filename= 'fake_{}.csv'.format(self.PDBname)
+        writer = file(os.path.join(fake_result_PREFIX+filename), 'wb')
+        w = csv.writer(writer)
+        w.writerow(['Name', NAME, 'Target PDB', 'ResIndex', 'Similarity'] + key + ['Vector'])
+
+        for k,v in self.heterodict.items():
+            line = ['sth', 'NA', self.PDBname, 'NA', 'NA' ] + ['NA']*len(key) + [v['raw_vector']]
+            w.writerow(line)
+        writer.flush()
+        writer.close()
+
+    def append_vectors(self,hetero_file):
+        '''
+        Append each docked result as a vector to the dict
+        :param hetero_file: file position
+        :return: nothing , but will generate a vector into the dict
+        '''
+
+        #need to split the files
+        TEMP = 'temp.pdb'
+        ct=0
+        o = open(hetero_file,'r')
+        one_pdb=''
+        for line in o:
+            one_pdb+=line
+            if 'END' in line:
+                #write a temporial file
+                with open(TEMP,'wb') as w:
+                    w.write(one_pdb)
+                    w.close()
+                one_pdb = ''
+                pdb = parsePDB(TEMP)
+                if pdb.numAtoms() <= 3:
+                    continue
+
+
+                # Get coordinate of center
+                xyz = pdb.getCoords()
+                middle = calcCenter(pdb)
+
+                scale = max(max(xyz[:, 0]) - middle[0], middle[0] - min(xyz[:, 0]),
+                            max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
+                            max(xyz[:, 2]) - middle[2], middle[2] - min(xyz[:, 2]))
+
+                # assert scale <= 10
+                if scale > 10:
+                    logging.warning(
+                        'Warning! {} has a ligand out of box scale with {} atom distance to center'.format(self.PDBname,scale))
+                    # Now shifting the boxes:
+                    max_scale = max(max(xyz[:, 0]) - min(xyz[:, 0]),
+                                    max(xyz[:, 1]) - min(xyz[:, 1]),
+                                    max(xyz[:, 2]) - min(xyz[:, 2]))
+                    if max_scale > 20:
+                        logging.error(
+                            'Assertion failed, {} has a ligand out of box completely with scale'.format(self.PDBname, scale))
+                        continue
+                    # Try to move to the new center
+                    middle = [(max(xyz[:, 0]) + min(xyz[:, 0])) / 2, (max(xyz[:, 1]) + min(xyz[:, 1])) / 2,
+                              (max(xyz[:, 2]) + min(xyz[:, 2])) / 2]
+
+                xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
+                                         np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
+                                         np.linspace(middle[2] - 9.5, middle[2] + 9.5, 20))
+
+                # print xx
+                vector = np.c_[xx.ravel(), yy.ravel(), zz.ravel()]
+
+                num_vector = [0] * 8000
+                for atom in pdb.iterAtoms():
+                    x, y, z = atom.getCoords()
+                    x_pos = int(round(x - vector[0][0]))
+                    # assert 0 <= x_pos <= 19
+                    y_pos = int(round(y - vector[0][1]))
+                    # assert 0 <= y_pos <= 19
+                    z_pos = int(round(z - vector[0][2]))
+                    # assert 0 <= z_pos <= 19
+                    if 0 <= x_pos <= 19 and 0 <= y_pos <= 19 and 0 <= z_pos <= 19:
+                        # Simply change here to fulfill the mark as 'H_1'
+                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getElement() + '_' + str(HETERO_PART)
+
+                # quick,dirty way to find atoms of protein in cubic boxes
+                defSelectionMacro('inbox',
+                                  'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
+                                                                                                middle[2]))
+                nearby = self.protein.select('inbox')
+
+                if nearby is not None:
+                    for atom in nearby.iterAtoms():
+                        x, y, z = atom.getCoords()
+                        x_pos = int(round(x - vector[0][0]))
+                        # assert 0 <= x_pos <= 19
+                        y_pos = int(round(y - vector[0][1]))
+                        # assert 0 <= y_pos <= 19
+                        z_pos = int(round(z - vector[0][2]))
+                        # assert 0 <= z_pos <= 19
+                        if 0 <= x_pos <= 19 and 0 <= y_pos <= 19 and 0 <= z_pos <= 19 and num_vector[
+                                                    x_pos * 400 + y_pos * 20 + z_pos] == 0:
+                            # Simply change here to fulfill the mark as 'C_2'
+                            num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getElement() + '_' + str(PROTEIN_PART)
+                        else:
+                            logging.warning('Coorinate {} {} {} found at {}'.format(x_pos, y_pos, z_pos, self.PDBname))
+
+                            # This is for checking the correctness when we add atoms in proteins.
+                            # filename2= 'data/{}_{}_2.pdb'.format(PDB, ResId)
+                            # writePDB(filename2, pick_one+nearby)
+
+                # Save into the dict for future locating
+                self.heterodict[str(ct)] = {
+                    'raw_vector': num_vector,
+                    'center': middle,
+                    'filename': hetero_file,
+                    'id': hetero_file.split('/')[-1].split('.')[0]+'_'+str(ct)
+                }
+                ct+=1
 

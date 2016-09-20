@@ -1,16 +1,22 @@
 from fileparser import do_one_pdb
-from Config import pdb_PREFIX
+from Config import pdb_PREFIX,fake_src_PREFIX,fake_pdb_name,fake_hetero_PREFIX
 import os,sys,io
 import gzip
+from vector_gen import pdb_container,fake_pdb_container
 
 PDB_tar=['1hck']
 
 #do_one_pdb('1hck')
-do_one_pdb('1eob')
+#do_one_pdb('1vq6')
 
-for pdb in PDB_tar:
 
-    with gzip.open(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb))) as f:
-        for line in f:
-            #print line
-            pass
+
+a= fake_pdb_container('aa2ar',filepos=fake_src_PREFIX+'aa2ar/'+fake_pdb_name)
+
+filenames =  os.listdir(fake_hetero_PREFIX)
+
+for filename in filenames:
+    if filename.split('.')[-1]=='pdb':
+        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
+
+a.self_generating()
