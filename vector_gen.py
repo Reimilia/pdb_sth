@@ -54,7 +54,6 @@ class pdb_container:
         #Their values will be stored in a dict
         for pick_one in HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
-            print 'here'
             if pick_one.numAtoms() <= 3:
                 continue
 
@@ -163,13 +162,16 @@ class pdb_container:
 
         for k,v in self.heterodict.items():
             try:
+                #print 'babel {0}/{1} {0}/{2} -ofpt'.format(os.getcwd(),sdf_filedir,v['filename'])
                 command = os.popen('babel {0}/{1} {0}/{2} -ofpt'.format(os.getcwd(),sdf_filedir,v['filename']))
+                #print command.read()
                 cp = re.split('=|\n', command.read())[2]
             except:
                 logging.warning('Babel encountered a problem at pdb {} ligand {}'.format(self.PDBname, v['filename']))
                 cp = 0
                 raise TypeError
 
+            #print cp
             if float(cp) >= 0.85:
                 v['cp']=float(cp)
                 possible_ones.append(v)

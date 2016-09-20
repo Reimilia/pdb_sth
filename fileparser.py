@@ -52,7 +52,7 @@ def fn_timer(function):
 
 
 @fn_timer
-def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
+def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.sdf'):
     '''
 
     :param src: pdb name
@@ -79,10 +79,12 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
             os.mkdir(result_PREFIX)
 
     # in case for overwriting
+    '''
     if os.path.exists(filedir):
         print '{} already done.'.format(src)
         logging.info('{} already done'.format(src))
         return True
+    '''
 
     # csv writer
     writer = file(filedir, 'wb')
@@ -119,13 +121,13 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
     # Since we use scripts so I just extract them to make sure that is what
     # we really want to compare
     # (But there should be a smarter way to do so)
-    o =open("a.sdf", "w")
+    o =open(fileforbabel, "w")
     try:
         mol = ''
         LINE_BEGIN=True
         Wait_Signal= 0
         one_line=['']*Total_columns
-        print 'here'
+        #print 'here'
         for line in input_sdf:
             mol+=line
 
@@ -156,7 +158,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
                 o.close()
 
                 # Find pairs with at least 85% similarity scores
-                ans_list =PDBindex.find_similar_target('a.sdf')
+                ans_list =PDBindex.find_similar_target(fileforbabel)
 
                 count +=1
                 for eachone in ans_list:
@@ -177,7 +179,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
 
                 mol = ''
                 LINE_BEGIN=False
-                o = open("a.sdf", "w")
+                o = open(fileforbabel, "w")
 
     except:
         logging.error('Unknown error here!')
@@ -197,7 +199,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False):
         writer.close()
     return True
 
-def do_one_pdb(pdb,REPORTCSV=None):
+def do_one_pdb(pdb,REPORTCSV=None,index=0):
     '''
     For each target-complex pdb , this program check if .pdb file exists
     if not ,download first then call the function to match all possible target-ligands with
@@ -214,7 +216,7 @@ def do_one_pdb(pdb,REPORTCSV=None):
     if os.path.exists(filename):
         # pdbfile exists
         logging.info(pdb + ' has already exists')
-        return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV)
+        return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV,fileforbabel='{}.sdf'.format(index))
 
     else:
         # Not exists, download from the internet
@@ -233,7 +235,7 @@ def do_one_pdb(pdb,REPORTCSV=None):
                 #If we download files successfully, then we will run the program
                 print 'download {} successfully'.format(pdb)
                 logging.info('download {} successfully'.format(pdb))
-                return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV)
+                return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV,fileforbabel='{}.sdf'.format(index))
         o.close()
 
 def initiate_report():

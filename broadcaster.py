@@ -24,18 +24,27 @@ comm_size = comm.Get_size()
 
 file_num= len(PDB_tar)
 
-report_name=initiate_report()
+
 
 if __name__ == '__main__':
     #dirty and lazy way to multiprocessing
     #just split files to each processors.
+    #and you will see multiprocessing
     if comm_rank == 0:
+        # the No.0 one hand out issues
         file_list = PDB_tar
         sys.stderr.write("%d files\n" % len(file_list))
+        report_name = initiate_report()
+
+    # broadcast filelist
     file_list = comm.bcast(file_list if comm_rank == 0 else None, root=0)
     local_files_offset = np.linspace(0, file_num, comm_size + 1).astype('int')
+
+    # receive own part
     local_files = file_list[local_files_offset[comm_rank]:local_files_offset[comm_rank + 1]]
     sys.stderr.write("%d/%d processor gets %d/%d data \n" % (comm_rank, comm_size, len(local_files), file_num))
+    report_name = 'report.csv'
 
+# Do seperately
 for file_name in local_files:
-    do_one_pdb(file_name,REPORTCSV=report_name)
+    do_one_pdb(file_name,REPORTCSV=report_name,index=comm_rank)

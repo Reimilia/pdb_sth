@@ -5,7 +5,8 @@ import gzip
 
 PDB_tar=['1hck']
 
-do_one_pdb('1hck')
+#do_one_pdb('1hck')
+do_one_pdb('1eob')
 
 for pdb in PDB_tar:
 
