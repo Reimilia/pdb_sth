@@ -89,7 +89,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
     # csv writer
     writer = file(filedir, 'wb')
     w = csv.writer(writer)
-    w.writerow(['Name',NAME,'Target PDB','ResIndex','Similarity']+key+['Vector'])
+    w.writerow(['Name',NAME,'Target PDB','ResIndex','Similarity']+key+['Vector','Sequence'])
 
     # combine as file direction
     sdfone = filedir_PREFIX + src.upper() + '.sdf'
@@ -160,6 +160,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
                 # Find pairs with at least 85% similarity scores
                 ans_list =PDBindex.find_similar_target(fileforbabel)
 
+                one_line[-1]= PDBindex.sequence
                 count +=1
                 for eachone in ans_list:
                     assert 'id' in eachone
@@ -168,7 +169,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
                     one_line[2] = src
                     one_line[3] = eachone['id']
                     one_line[4] = eachone['cp']
-                    one_line[-1] = eachone['raw_vector']
+                    one_line[-2] = eachone['raw_vector']
                     # print one_line
                     active_count += 1
                     w.writerow(one_line)
@@ -179,7 +180,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
 
                 mol = ''
                 LINE_BEGIN=False
-                o = open(fileforbabel, "w")
+                o = open(fileforbabel, "a")
 
     except:
         logging.error('Unknown error here!')
