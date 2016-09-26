@@ -9,6 +9,9 @@ filedir_PREFIX=  '/media/wy/data/raw_data/'
 #where pdb files or zip files are
 pdb_PREFIX = '/media/wy/data/pdb_raw/'
 
+#where temporary pdb files are
+temp_pdb_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/data'
+
 #where csv result files are
 result_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result'
 

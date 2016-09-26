@@ -28,11 +28,29 @@ class pdb_container:
     For real pdb-ligand data
     It will separate each ligand (except ions)
     '''
+    def get_pdb_type(self):
+        '''
+        Nucleic Protein or Complex
+        :return:
+        '''
+        if self.pure_protein is not None:
+            if self.pure_nucleic is None:
+                return 'Protein'
+            else:
+                return 'Protein_Nucleic_Complex'
+        else:
+            if self.pure_protein is None:
+                return 'Nucleic'
+            else:
+                return 'Unknown or empty'
+
     def __init__(self,PDB,filepos=None,OUT=True,**kwargs):
         self.PDBname= PDB
         self.heterodict = {}
         self.ct=0
         self.sequence = ''
+        self.pure_protein= None
+        self.pure_nucleic= None
 
         # filepos is to determine whether we download pdb files from wwPDB
         # or use what we have
@@ -50,8 +68,9 @@ class pdb_container:
         #Generating sequence here
         storage = []
         for chain in parse.getHierView():
+            print chain
             for seq in storage:
-                if chain.getSequence==seq:
+                if chain.getSequence()==seq:
                     continue
             self.sequence = self.sequence + repr(chain) +'|' + chain.getSequence()
             storage.append(chain.getSequence())
@@ -61,12 +80,13 @@ class pdb_container:
         other = parse.select('protein or nucleic')
 
         self.pure_protein = parse.select('protein')
+        self.pure_nucleic = parse.select('nucleic')
 
         # bad one (no hetero or protein)
-        if hetero is None or self.pure_protein is None or other is None:
+        if hetero is None or other is None:
             return
-        if OUT:
-            writePDB('data/{}_pure.pdb'.format(PDB),other)
+        #if OUT:
+        #    writePDB('data/{}_pure.pdb'.format(PDB),other)
 
 
 
@@ -82,9 +102,9 @@ class pdb_container:
 
             # Extract this ligand from protein (as input for openbabel)
             if filepos is not None:
-                filename = 'data/{}_{}.pdb'.format(filepos.split('/')[-1].split('.')[0], ResId)
+                filename = 'data/{}_{}_ligand.pdb'.format(filepos.split('/')[-1].split('.')[0], ResId)
             else:
-                filename = 'data/{}_{}.pdb'.format(PDB, ResId)
+                filename = 'data/{}_{}_ligand.pdb'.format(PDB, ResId)
 
             if not os.path.isfile(filename):
                 if not os.path.exists('data'):
@@ -96,7 +116,6 @@ class pdb_container:
             # Get coordinate of center
             xyz = pick_one.getCoords()
             middle = calcCenter(pick_one)
-            #print middle
 
             scale = max(max(xyz[:, 0]) - middle[0], middle[0] - min(xyz[:, 0]),
                         max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
@@ -115,6 +134,7 @@ class pdb_container:
                 #Try to move to the new center
                 middle =  [(max(xyz[:, 0])+ min(xyz[:, 0]))/2,(max(xyz[:, 1])+min(xyz[:, 1]))/2,(max(xyz[:, 2])+min(xyz[:, 2]))/2]
 
+            print middle
             xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
                                      np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
                                      np.linspace(middle[2] - 9.5, middle[2] + 9.5, 20))
@@ -137,7 +157,7 @@ class pdb_container:
 
             # quick,dirty way to find atoms of protein in cubic boxes
             defSelectionMacro('inbox','abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]))
-            nearby= self.pure_protein.select('inbox')
+            nearby= other.select('inbox')
 
             if nearby is not None:
                 for atom in nearby.iterAtoms():
@@ -154,20 +174,25 @@ class pdb_container:
                     else:
                         logging.warning('Coorinate {} {} {} found at {}'.format(x_pos,y_pos,z_pos,self.PDBname))
 
-                #This is for checking the correctness when we add atoms in proteins.
-                filename2= 'data/{}_{}_2.pdb'.format(PDB, ResId)
-                writePDB(filename2, nearby)
+                if OUT:
+                    #Output the pure protein part in the box and the ligand-protein complex part
+                    filename2= 'data/{}_{}_receptor.pdb'.format(PDB, ResId)
+                    writePDB(filename2, nearby)
+                    filename2= 'data/{}_{}_complex.pdb'.format(PDB,ResId)
+                    writePDB(filename2, nearby+pick_one)
 
             #Save into the dict for future locating
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
                 'center': middle,
                 'selectmarco': 'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]),
+                'naming': '{}_{}'.format(PDB,ResId),
                 'filename': filename,
                 'id': ResId,
                 'ligand': pick_one,
                 'vina_score' : 0
             }
+
     def find_similar_target(self,sdf_filedir,**kwargs):
         '''
         Find the ligands that is highly possible to be the same compounds
@@ -228,14 +253,15 @@ class pdb_container:
         from Config import pythonsh_dir
 
         # write receptor pdbqt files:
-        # receptor_file_loc = os.path.join('data/',self.PDBname+'_pure.pdb')
-        receptor_file_loc = os.path.join('data/',self.PDBname+'_{}_2.pdb'.format(ResId))
+        receptor_file_loc = os.path.join('data/',self.PDBname+'_pure.pdb')
+        #TODO modify this part to get right location for python script and storage
+        #receptor_file_loc = os.path.join('data/',self.PDBname+'_{}_2.pdb'.format(ResId))
         if not os.path.exists(receptor_file_loc+'qt'):
-            os.system(os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -r {0} -o {0}qt'.format(receptor_file_loc))
+            os.system(os.path.join(pythonsh_dir, 'pythonsh') + ' mapping/prepare_receptor4.py -r {0} -o {0}qt'.format(receptor_file_loc))
 
         # write ligand pdbqt files
         ligand_file_loc = self.heterodict[ResId]['filename']
-        os.system(os.path.join(pythonsh_dir,'pythonsh')+' prepare_ligand4.py -l {0} -o {0}qt'.format(ligand_file_loc))
+        os.system(os.path.join(pythonsh_dir,'pythonsh')+' mapping/prepare_ligand4.py -l {0} -o {0}qt'.format(ligand_file_loc))
 
         # write config files
         with open('vina_config.txt','w') as f:
@@ -277,6 +303,7 @@ class pdb_container:
         '''
         for k in self.heterodict.keys():
             self.set_vina_benchmark(k,BoxSize=Box)
+
 
     '''
     def __iter__(self):

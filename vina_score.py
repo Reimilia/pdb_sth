@@ -44,4 +44,4 @@ if __name__ == '__main__':
     initiate_score_file()
     for each in PDB_tar:
         each = each.lower()
-        score_one_by_vina(each)
+        score_one_by_vina(each,CLEAN=True)
