@@ -68,7 +68,7 @@ class pdb_container:
         #Generating sequence here
         storage = []
         for chain in parse.getHierView():
-            print chain
+            #print chain
             for seq in storage:
                 if chain.getSequence()==seq:
                     continue
@@ -85,8 +85,9 @@ class pdb_container:
         # bad one (no hetero or protein)
         if hetero is None or other is None:
             return
-        #if OUT:
-        #    writePDB('data/{}_pure.pdb'.format(PDB),other)
+        if OUT:
+            writePDB('data/{}_receptor.pdb'.format(PDB),other)
+            writePDB('data/{}_complex.pdb'.format(PDB),parse)
 
 
 
@@ -134,7 +135,7 @@ class pdb_container:
                 #Try to move to the new center
                 middle =  [(max(xyz[:, 0])+ min(xyz[:, 0]))/2,(max(xyz[:, 1])+min(xyz[:, 1]))/2,(max(xyz[:, 2])+min(xyz[:, 2]))/2]
 
-            print middle
+            #print middle
             xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
                                      np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
                                      np.linspace(middle[2] - 9.5, middle[2] + 9.5, 20))
@@ -192,6 +193,7 @@ class pdb_container:
                 'ligand': pick_one,
                 'vina_score' : 0
             }
+
 
     def find_similar_target(self,sdf_filedir,**kwargs):
         '''

@@ -8,6 +8,7 @@ import sys,io,os
 from functools import wraps
 import time
 import re
+import commands
 from Autodock_Config import autodock_store_dir,pythonsh_dir
 
 WORK_DIR = os.getcwd()
@@ -40,33 +41,43 @@ def fn_timer(function):
     return function_timer
 
 
-def prepare_receptor(filename,pdbname):
+def prepare_receptor(filename,pdbname,OVERWRITE=False):
     if filename.split('.')[-1]!='pdb':
         print 'Error! when prepare receptor'
-        return
+        return False
     real_dir = os.path.join(autodock_store_dir,pdbname)
     real_filepos= os.path.join(real_dir,filename.split('/')[-1])+'qt'
-    if not os.path.exists(real_filepos):
+    if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
-        os.system(os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -r {0} -o {1}'
-              .format(filename,real_filepos))
+        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -r {0} -o {1}'.format(filename, real_filepos)
+        #print cmd
+        stat ,out = commands.getstatusoutput(cmd)
+        #print stat,out
         os.chdir(WORK_DIR)
+        if stat==256:
+            return False
     #print 'Ok'
+    return True
 
 
-def prepare_ligand(filename,pdbname):
+def prepare_ligand(filename,pdbname,OVERWRITE=False):
 
     if filename.split('.')[-1]!='pdb':
         print 'Error! when prepare ligand'
-        return
+        return False
     real_dir = os.path.join(autodock_store_dir, pdbname)
     real_filepos = os.path.join(real_dir, filename.split('/')[-1]) + 'qt'
-    if not os.path.exists(real_filepos):
+    if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
-        os.system(os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -l {0} -o {1}'
-                  .format(filename, real_filepos))
+        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -l {0} -o {1} '.format(filename, real_filepos)
+        stat ,out = commands.getstatusoutput(cmd)
+        print out
         os.chdir(WORK_DIR)
+        if stat==256:
+            return False
+
     #print 'Ok'
+    return True
 
 @fn_timer
 def do_auto_grid(receptor,ligand,center=None):
@@ -76,25 +87,22 @@ def do_auto_grid(receptor,ligand,center=None):
 
 
     if not os.path.exists(receptor) or not os.path.exists(ligand):
-        print receptor
-        print ligand
-        raise TypeError('fileformat')
-        return
+        return False
     if rname.split('.')[-1]=='pdb':
-        prepare_receptor(receptor,pdbname)
+        if not prepare_receptor(receptor,pdbname):
+            return False
         rname+='qt'
     else:
         if rname.split('.')[-1]!='pdbqt':
-            raise TypeError('fileformat')
-            return
+            return False
 
     if lname.split('.')[-1] == 'pdb':
-        prepare_ligand(ligand,pdbname)
+        if not prepare_ligand(ligand,pdbname):
+            return False
         lname+='qt'
     else:
         if lname.split('.')[-1] != 'pdbqt':
-            raise TypeError('fileformat')
-            return
+            return False
 
     naming = "".join(rname.split('.')[:-1])
     real_dir = os.path.join(autodock_store_dir,pdbname)
@@ -106,19 +114,31 @@ def do_auto_grid(receptor,ligand,center=None):
     os.chdir(CURRENT_DIR)
 
     if center is None:
-        os.system(os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" '
-              .format(lloc,rloc,glg_output_dir))
+        cmd = os.path.join(pythonsh_dir, 'pythonsh') + \
+              ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" '.format(lloc,rloc,glg_output_dir)
+        stat, out = commands.getstatusoutput(cmd)
+        if stat == 256:
+            os.chdir(WORK_DIR)
+            return False
     else:
-        os.system(os.path.join(pythonsh_dir,'pythonsh') +
-                  ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" -p gridcenter=\"{},{},{}\" '
-                  .format(lloc,rloc ,glg_output_dir, center[0],center[1],center[2]))
+        cmd = os.path.join(pythonsh_dir,'pythonsh') + \
+                  ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" -p gridcenter=\"{},{},{}\" '.format(lloc,rloc ,glg_output_dir, center[0],center[1],center[2])
+        stat, out = commands.getstatusoutput(cmd)
+        if stat == 256:
+            os.chdir(WORK_DIR)
+            return False
 
     #Suppose autogrid and autodock has installed
     os.chdir(real_dir)
-    os.system('autogrid4 -p {0}.gpf -l {0}.glg'.format(glg_output_dir))
+    cmd = 'autogrid4 -p {0}.gpf -l {0}.glg'.format(glg_output_dir)
+    stat, out = commands.getstatusoutput(cmd)
     os.chdir(WORK_DIR)
+    if stat==256:
+        return False
+
 
     #print 'Ok'
+    return True
 
 
 @fn_timer
@@ -128,27 +148,25 @@ def do_auto_dock(receptor,ligand,center=None):
     pdbname = rname.split('_')[0]
 
     if not os.path.exists(receptor) or not os.path.exists(ligand):
-        raise TypeError('fileformat')
-        return
+        return False
 
     do_auto_grid(receptor,ligand,center)
 
     if rname.split('.')[-1] == 'pdb':
-        prepare_receptor(receptor,pdbname)
+        if not prepare_receptor(receptor,pdbname):
+            return False
         rname += 'qt'
     else:
         if rname.split('.')[-1] != 'pdbqt':
-            raise TypeError('fileformat')
-            return
+            return False
 
     if lname.split('.')[-1] == 'pdb':
-        prepare_ligand(ligand,pdbname)
+        if not prepare_ligand(ligand,pdbname):
+            return False
         lname += 'qt'
     else:
         if lname.split('.')[-1] != 'pdbqt':
-            raise TypeError('fileformat')
-            return
-
+            return False
     os.chdir(CURRENT_DIR)
 
     naming = "".join(rname.split('.')[:-1])
@@ -158,15 +176,22 @@ def do_auto_dock(receptor,ligand,center=None):
     rloc = os.path.join(real_dir, rname)
     lloc = os.path.join(real_dir, lname)
 
-    os.system(os.path.join(pythonsh_dir,'pythonsh') + ' prepare_dpf42.py -l {} -r {} -o {}.dpf'
-              .format(lloc, rloc, dlg_output_dir ))
-
+    cmd=os.path.join(pythonsh_dir,'pythonsh') + \
+        ' prepare_dpf42.py -l {} -r {} -o {}.dpf'.format(lloc, rloc, dlg_output_dir )
+    stat, out = commands.getstatusoutput(cmd)
+    if stat == 256:
+        os.chdir(WORK_DIR)
+        return False
     # Suppose autogrid and autodock has installed
     os.chdir(real_dir)
-    #os.system(os.path.join('autodock4 -p {0}.dpf -l {0}.dlg'.format(dlg_output_dir)))
+    cmd = 'autodock4 -p {0}.dpf -l {0}.dlg'.format(dlg_output_dir)
+    stat, out = commands.getstatusoutput(cmd)
     os.chdir(WORK_DIR)
+    if stat == 256:
+        return False
 
-    print 'Ok'
+
+    return True
 
 
 @fn_timer
@@ -177,24 +202,25 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
     pdbname = rname.split('_')[0]
 
     if not os.path.exists(receptor) or not os.path.exists(ligand):
-        raise TypeError('fileformat')
-        return
+        return 'NA'
     if rname.split('.')[-1]=='pdb':
-        prepare_receptor(receptor,pdbname)
+        if not prepare_receptor(receptor,pdbname):
+            return 'NA'
         rname+='qt'
     else:
         if rname.split('.')[-1]!='pdbqt':
-            raise TypeError('fileformat')
-            return
+            return 'NA'
 
     if lname.split('.')[-1] == 'pdb':
-        prepare_ligand(ligand,pdbname)
+        print 'here'
+        if not prepare_ligand(ligand,pdbname,OVERWRITE=True):
+            return 'NA'
         lname+='qt'
     else:
         if lname.split('.')[-1] != 'pdbqt':
-            raise TypeError('fileformat')
-            return
+            return 'NA'
 
+    print 'here'
     real_dir = os.path.join(autodock_store_dir, pdbname)
 
     rloc = os.path.join(real_dir, rname)
@@ -230,6 +256,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
                 return 'NA'
 
                 # scp =  re.split('=|\n', ls)[2]
+    return 'NA'
 
 if __name__=='__main__':
     #Example on how to finish auto docking process

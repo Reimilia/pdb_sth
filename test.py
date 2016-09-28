@@ -28,6 +28,8 @@ P =0
 N =0
 C =0
 
+ct=0
+
 for pdb in PDB_tar:
     pdb= pdb.lower()
     A= pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'),OUT=False)
@@ -38,6 +40,8 @@ for pdb in PDB_tar:
         N+=1
     if pdbtype=='Protein_Nucleic_Complex':
         C+=1
+    ct+=1
+    print str(ct)+'/14388'
 
 print P
 print N
