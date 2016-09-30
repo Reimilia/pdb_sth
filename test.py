@@ -1,3 +1,7 @@
+'''
+This file shows examples on how to use the scripts in project
+'''
+
 from fileparser import do_one_pdb
 from Config import *
 import os,sys,io
@@ -5,25 +9,24 @@ import gzip
 from vector_gen import pdb_container,fake_pdb_container
 from Config import pdb_PREFIX
 
-'''
-PDB_tar=['1uwj']
 
-#do_one_pdb('1j8q')
+#PDB_tar=['1uwj']
+
 #do_one_pdb('100d')
-A= pdb_container('100d',filepos=os.path.join(pdb_PREFIX,'1j8q.pdb.gz'))
+#A= pdb_container('100d',filepos=os.path.join(pdb_PREFIX,'1j8q.pdb.gz'))
 #print A.set_vina_benchmark('147')
 
-a= fake_pdb_container('aa2ar',filepos=fake_src_PREFIX+'aa2ar/'+fake_pdb_name)
+#a= fake_pdb_container('aa2ar',filepos=fake_src_PREFIX+'aa2ar/'+fake_pdb_name)
 
-filenames =  os.listdir(fake_hetero_PREFIX)
+#filenames =  os.listdir(fake_hetero_PREFIX)
 
-for filename in filenames:
-    if filename.split('.')[-1]=='pdb':
-        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
+#for filename in filenames:
+#    if filename.split('.')[-1]=='pdb':
+#        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
 
-a.self_generating()
+#a.self_generating()
+
 '''
-
 P =0
 N =0
 C =0
@@ -46,3 +49,4 @@ for pdb in PDB_tar:
 print P
 print N
 print C
+'''

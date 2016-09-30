@@ -7,11 +7,13 @@ import os,re
 import logging
 
 '''
-Core part for generating vectors
+Core part for generating vectors and split source pdb files with
 With the help of prody library.
 Need installation first
 Using:
   sudo pip install -r requirements.txt
+
+For local installation, see: http://prody.csb.pitt.edu/downloads/
 
 '''
 
@@ -77,6 +79,8 @@ class pdb_container:
 
         # magic for selection desired atom group (see instruction of prody)
         hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
+
+
         other = parse.select('protein or nucleic')
 
         self.pure_protein = parse.select('protein')

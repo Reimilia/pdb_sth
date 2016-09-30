@@ -16,6 +16,11 @@ CURRENT_DIR = os.getcwd()+'/mapping'
 #os.chdir(CURRENT_DIR)
 
 def set_new_folder(PDBname,storedir):
+    '''
+    :param PDBname:
+    :param storedir:
+    :return:
+    '''
     #os.chdir(storedir)
     if not os.path.exists(os.path.join(storedir,PDBname)):
         os.mkdir(os.path.join(storedir,PDBname))
@@ -55,6 +60,7 @@ def prepare_receptor(filename,pdbname,OVERWRITE=False):
         #print stat,out
         os.chdir(WORK_DIR)
         if stat==256:
+            print out
             return False
     #print 'Ok'
     return True
@@ -71,9 +77,9 @@ def prepare_ligand(filename,pdbname,OVERWRITE=False):
         os.chdir(CURRENT_DIR)
         cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -l {0} -o {1} '.format(filename, real_filepos)
         stat ,out = commands.getstatusoutput(cmd)
-        print out
         os.chdir(WORK_DIR)
         if stat==256:
+            print out
             return False
 
     #print 'Ok'

@@ -1,5 +1,5 @@
 '''
-Generate autovina score and elecgrid files. Also differentiate
+Generate autovina score and elecgrid files. The record will be sotred in specific file.
 '''
 from mapping import *
 from Config import *
@@ -7,9 +7,17 @@ import os
 from vector_gen import pdb_container
 import csv
 
+#Which content does the result includes
 SUMMARY_COLUMN = ['PDB name','PDB type', 'ligand NAME', 'ligand index in PDB', 'vina score(kcal/mol)', 'box_scale', 'pure_protein_gridmap_filename',
                   'pure_ligand_gridmap_filename', 'ligand_receptor_complex_gridmap_filename']
-PAIR_SUMMARY = 'lignad-receptor_pair.csv'
+
+#file name of the result. All results will be recorded in './result/' folder automatically
+#TODO add options to save to another place (maybe)
+#PAIR_SUMMARY = 'lignad-receptor_pair.csv'
+PAIR_SUMMARY =  'test.csv'
+
+#We don't want to delete these files in './data'.
+#This is a very awful way to make this one, but quite useful.
 RESERVE_NAME = ['fake-ligand.pdb']
 
 
@@ -18,7 +26,7 @@ def generate_one_map(PDBname, BOX=20):
     set_new_folder(PDBname,result_PREFIX)
 
     PDBIndex = pdb_container(PDBname,filepos=pdb_PREFIX+PDBname.lower()+'.pdb.gz')
-    #PDBIndex.set_all_vina_benchmark(Box=BOX)
+    # PDBIndex.set_all_vina_benchmark(Box=BOX)
     PDBtype = PDBIndex.get_pdb_type()
 
     fake_ligand_filename = os.path.join(temp_pdb_PREFIX,'fake-ligand.pdb')
@@ -78,7 +86,7 @@ def clean_temp_data():
 
 @fn_timer
 def for_fun():
-    test =PDB_tar[0:100]
+    test = ['2dth']
     print test
 
     initialize_summary_file(PAIR_SUMMARY)
