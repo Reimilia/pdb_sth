@@ -15,19 +15,6 @@ temp_pdb_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/data'
 #where csv result files are
 result_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result'
 
-#where we store fake docing source pdb files
-#Suppose there should be
-fake_src_PREFIX = '/media/wy/data/all/'
-
-#where we store fake docing pdb result files
-fake_hetero_PREFIX = '/media/wy/data/set/set/'
-
-#where we store output csv files
-fake_result_PREFIX = '/media/wy/data/result/'
-
-#name of fake pdb files
-fake_pdb_name = 'receptor.pdb'
-
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"
 
@@ -35,14 +22,27 @@ MUST = "PDB ID(s) for Ligand-Target Complex"
 NAME = 'BindingDB Reactant_set_id'
 
 # How many columns will the output csv files have
-Total_columns= 13
+Total_columns= 15
 
 # The keys need to be recorded
 key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
 
+# the name of the result after merge all things together
+merged_Filename = 'result.csv'
 
-# Location of pythonsh environment MGLTools provide
-# We need this script to convert PDB to PDBqt in a quick way.
+#These four is used to support Xiao's code
+#where we store fake docing source pdb files
+#Suppose there should be
+fake_src_PREFIX = '/media/wy/data/all/'
+#where we store fake docing pdb result files
+fake_hetero_PREFIX = '/media/wy/data/set/set/'
+#where we store output csv files
+fake_result_PREFIX = '/media/wy/data/result/'
+#name of fake pdb files
+fake_pdb_name = 'receptor.pdb'
+
+# Location of pythonsh environment MGLTools provide (because its python 2.5 and use some abandoned characteristics)
+# We need this filelocation to convert PDB to PDBqt in a quick way.
 pythonsh_dir=  '/home/wy/Application/mgltools_x86_64Linux2_1.5.6/bin/'
 
 # All PDB_target

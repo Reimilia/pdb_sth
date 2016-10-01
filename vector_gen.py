@@ -47,6 +47,13 @@ class pdb_container:
                 return 'Unknown or empty'
 
     def __init__(self,PDB,filepos=None,OUT=True,**kwargs):
+        '''
+
+        :param PDB: name of PDB
+        :param filepos: directory of where PDB file stores
+        :param OUT: if true, splitted files will be output in './data' folder
+        :param kwargs: for further extension
+        '''
         self.PDBname= PDB
         self.heterodict = {}
         self.ct=0
@@ -121,6 +128,8 @@ class pdb_container:
             # Get coordinate of center
             xyz = pick_one.getCoords()
             middle = calcCenter(pick_one)
+            # in pi degree , the rotation of the box (if needed)
+            rotation= [0,0,0]
 
             scale = max(max(xyz[:, 0]) - middle[0], middle[0] - min(xyz[:, 0]),
                         max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
@@ -162,6 +171,11 @@ class pdb_container:
 
             # quick,dirty way to find atoms of protein in cubic boxes
             defSelectionMacro('inbox','abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]))
+
+            # This place might have some potential problem
+            # for ADP or ATP , they might either be part of nucleic and the ligand
+            # This will cause a severe bug when calculating autovina score
+            # TODO fix this issue
             nearby= other.select('inbox')
 
             if nearby is not None:
@@ -190,12 +204,13 @@ class pdb_container:
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
                 'center': middle,
+                'rotation': rotation,
                 'selectmarco': 'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]),
                 'naming': '{}_{}'.format(PDB,ResId),
                 'filename': filename,
                 'id': ResId,
                 'ligand': pick_one,
-                'vina_score' : 0
+                'vina_score' : 'NA'
             }
 
 

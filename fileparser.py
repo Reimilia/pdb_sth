@@ -24,6 +24,20 @@ formatter = logging.Formatter('LINE %(lineno)-4d  %(levelname)-8s %(message)s', 
 fileHandler.setFormatter(formatter)
 logging.getLogger('').addHandler(fileHandler)
 
+def list_formatter(table):
+    '''
+    I don't know if there is a better solution to format a list into
+    :param table:
+    :return:
+    '''
+    try:
+        output='['+str(table[0])
+        for i in range(len(table)-1):
+            output+=(','+str(table[i+1]))
+        output+=']'
+    except:
+        raise TypeError('This object is not iterable!')
+    return output
 
 
 
@@ -87,9 +101,9 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
     '''
 
     # csv writer
-    writer = file(filedir, 'wb')
+    writer = file(filedir, 'w')
     w = csv.writer(writer)
-    w.writerow(['Name',NAME,'Target PDB','ResIndex','Similarity']+key+['Vector','Sequence'])
+    w.writerow(['Name',NAME,'Target PDB','ResIndex','Similarity']+key+['Center of Vector','Rotation Degree(pi)','Vector','Sequence'])
 
     # combine as file direction
     sdfone = filedir_PREFIX + src.upper() + '.sdf'
@@ -163,13 +177,17 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
                 one_line[-1]= PDBindex.sequence
                 count +=1
                 for eachone in ans_list:
+                    #Combine each part together
                     assert 'id' in eachone
                     assert 'cp' in eachone
                     assert 'raw_vector' in eachone
                     one_line[2] = src
                     one_line[3] = eachone['id']
                     one_line[4] = eachone['cp']
-                    one_line[-2] = eachone['raw_vector']
+                    one_line[-2] = list_formatter(eachone['raw_vector'])
+                    #one_line[-3] = '[{},{},{}]'.format(eachone['center'][0],eachone['center'][1],eachone['center'][2])
+                    one_line[-3] = list_formatter(eachone['rotation'])
+                    one_line[-4] = list_formatter(eachone['center'])
                     # print one_line
                     active_count += 1
                     w.writerow(one_line)
@@ -254,7 +272,10 @@ if __name__ == '__main__':
     report = initiate_report()
 
     for pdb in PDB_tar:
-
+        #dirty way to do small scale tests
+        #Use a count variable
+        if ct==10:
+            break
         if do_one_pdb(pdb,REPORTCSV=report):
             DONE.append(pdb)
         else:
