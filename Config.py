@@ -35,10 +35,14 @@ MUST = "PDB ID(s) for Ligand-Target Complex"
 NAME = 'BindingDB Reactant_set_id'
 
 # How many columns will the output csv files have
-Total_columns= 13
+Total_columns= 15
 
 # The keys need to be recorded
 key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
+
+# the name of the result after merge all things together
+merged_Filename = 'result.csv'
+
 
 
 # Location of pythonsh environment MGLTools provide

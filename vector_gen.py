@@ -47,6 +47,13 @@ class pdb_container:
                 return 'Unknown or empty'
 
     def __init__(self,PDB,filepos=None,OUT=True,**kwargs):
+        '''
+
+        :param PDB:
+        :param filepos:
+        :param OUT:
+        :param kwargs:
+        '''
         self.PDBname= PDB
         self.heterodict = {}
         self.ct=0
@@ -121,6 +128,8 @@ class pdb_container:
             # Get coordinate of center
             xyz = pick_one.getCoords()
             middle = calcCenter(pick_one)
+            # in pi degree , the rotation of the box (if needed)
+            rotation= [0,0,0]
 
             scale = max(max(xyz[:, 0]) - middle[0], middle[0] - min(xyz[:, 0]),
                         max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
@@ -190,12 +199,13 @@ class pdb_container:
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
                 'center': middle,
+                'rotation': rotation,
                 'selectmarco': 'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]),
                 'naming': '{}_{}'.format(PDB,ResId),
                 'filename': filename,
                 'id': ResId,
                 'ligand': pick_one,
-                'vina_score' : 0
+                'vina_score' : 'NA'
             }
 
 
