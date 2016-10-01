@@ -47,6 +47,13 @@ def fn_timer(function):
 
 
 def prepare_receptor(filename,pdbname,OVERWRITE=False):
+    '''
+    prepare receptor pdbqt files
+    :param filename: the file name
+    :param pdbname:  pdbname (used for naming)
+    :param OVERWRITE: False = not overwrite existing file , True= can overwrite
+    :return:
+    '''
     if filename.split('.')[-1]!='pdb':
         print 'Error! when prepare receptor'
         return False
@@ -67,6 +74,13 @@ def prepare_receptor(filename,pdbname,OVERWRITE=False):
 
 
 def prepare_ligand(filename,pdbname,OVERWRITE=False):
+    '''
+    prepare ligand pdbqt files ( note different from receptor's)
+    :param filename: the file name
+    :param pdbname: pdbname (used for naming)
+    :param OVERWRITE: False = not overwrite existing file , True= can overwrite
+    :return:
+    '''
 
     if filename.split('.')[-1]!='pdb':
         print 'Error! when prepare ligand'
