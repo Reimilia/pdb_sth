@@ -87,6 +87,7 @@ def prepare_ligand(filename,pdbname,OVERWRITE=False):
 
 @fn_timer
 def do_auto_grid(receptor,ligand,center=None):
+    #extract names
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
     pdbname = rname.split('_')[0]
@@ -94,6 +95,8 @@ def do_auto_grid(receptor,ligand,center=None):
 
     if not os.path.exists(receptor) or not os.path.exists(ligand):
         return False
+
+    #prepare receptor
     if rname.split('.')[-1]=='pdb':
         if not prepare_receptor(receptor,pdbname):
             return False
@@ -102,6 +105,7 @@ def do_auto_grid(receptor,ligand,center=None):
         if rname.split('.')[-1]!='pdbqt':
             return False
 
+    #prepare ligand
     if lname.split('.')[-1] == 'pdb':
         if not prepare_ligand(ligand,pdbname):
             return False
@@ -110,6 +114,7 @@ def do_auto_grid(receptor,ligand,center=None):
         if lname.split('.')[-1] != 'pdbqt':
             return False
 
+    # get absolute names and locations
     naming = "".join(rname.split('.')[:-1])
     real_dir = os.path.join(autodock_store_dir,pdbname)
     glg_output_dir = os.path.join(real_dir,naming)
@@ -119,6 +124,7 @@ def do_auto_grid(receptor,ligand,center=None):
 
     os.chdir(CURRENT_DIR)
 
+    # prepare gpf files with customized parameters
     if center is None:
         cmd = os.path.join(pythonsh_dir, 'pythonsh') + \
               ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" '.format(lloc,rloc,glg_output_dir)
@@ -137,6 +143,8 @@ def do_auto_grid(receptor,ligand,center=None):
     #Suppose autogrid and autodock has installed
     os.chdir(real_dir)
     cmd = 'autogrid4 -p {0}.gpf -l {0}.glg'.format(glg_output_dir)
+
+    #Anything goes wrong , return False
     stat, out = commands.getstatusoutput(cmd)
     os.chdir(WORK_DIR)
     if stat==256:
@@ -156,8 +164,10 @@ def do_auto_dock(receptor,ligand,center=None):
     if not os.path.exists(receptor) or not os.path.exists(ligand):
         return False
 
+    #first prepare auto_grid maps
     do_auto_grid(receptor,ligand,center)
 
+    #prepare receptor
     if rname.split('.')[-1] == 'pdb':
         if not prepare_receptor(receptor,pdbname):
             return False
@@ -166,6 +176,7 @@ def do_auto_dock(receptor,ligand,center=None):
         if rname.split('.')[-1] != 'pdbqt':
             return False
 
+    #prepare ligand
     if lname.split('.')[-1] == 'pdb':
         if not prepare_ligand(ligand,pdbname):
             return False
@@ -175,6 +186,9 @@ def do_auto_dock(receptor,ligand,center=None):
             return False
     os.chdir(CURRENT_DIR)
 
+    #This part is just to get the absolute direction
+    #Because some scripts can only detect files in their direction
+    #which is not a good news
     naming = "".join(rname.split('.')[:-1])
     real_dir = os.path.join(autodock_store_dir, pdbname)
     dlg_output_dir = os.path.join(real_dir, naming)
@@ -182,14 +196,18 @@ def do_auto_dock(receptor,ligand,center=None):
     rloc = os.path.join(real_dir, rname)
     lloc = os.path.join(real_dir, lname)
 
+    #prepare dpf files
     cmd=os.path.join(pythonsh_dir,'pythonsh') + \
         ' prepare_dpf42.py -l {} -r {} -o {}.dpf'.format(lloc, rloc, dlg_output_dir )
     stat, out = commands.getstatusoutput(cmd)
+    # If anything goes wrong , return False
     if stat == 256:
         os.chdir(WORK_DIR)
         return False
+
     # Suppose autogrid and autodock has installed
     os.chdir(real_dir)
+    # Do real auto dock
     cmd = 'autodock4 -p {0}.dpf -l {0}.dlg'.format(dlg_output_dir)
     stat, out = commands.getstatusoutput(cmd)
     os.chdir(WORK_DIR)
@@ -203,10 +221,12 @@ def do_auto_dock(receptor,ligand,center=None):
 @fn_timer
 def do_auto_vina_score(receptor,ligand,center,Box=20):
     # receptor_file_loc = os.path.join('data/',self.PDBname+'_{}_2.pdb'.format(ResId))
+    #extract filename we want
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
     pdbname = rname.split('_')[0]
 
+    #prepare receptor
     if not os.path.exists(receptor) or not os.path.exists(ligand):
         return 'NA'
     if rname.split('.')[-1]=='pdb':
@@ -217,6 +237,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
         if rname.split('.')[-1]!='pdbqt':
             return 'NA'
 
+    #prepare ligand
     if lname.split('.')[-1] == 'pdb':
         print 'here'
         if not prepare_ligand(ligand,pdbname,OVERWRITE=True):
@@ -227,10 +248,8 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
             return 'NA'
 
     print 'here'
+    # get the absolute location
     real_dir = os.path.join(autodock_store_dir, pdbname)
-
-    rloc = os.path.join(real_dir, rname)
-    lloc = os.path.join(real_dir, lname)
 
     os.chdir(real_dir)
     # write config files
@@ -251,9 +270,11 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
 
     os.chdir(WORK_DIR)
 
+    # find the score in result
     ls = command.read()
     for line in ls.split('\n'):
         if 'Affinity' in line:
+            # find the real number in this line
             real_num = re.compile(r"[-+]?\d+\.\d+")
             score = real_num.search(line.split(':')[1])
             if score:
@@ -261,7 +282,6 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
             else:
                 return 'NA'
 
-                # scp =  re.split('=|\n', ls)[2]
     return 'NA'
 
 if __name__=='__main__':
