@@ -10,10 +10,47 @@ import time
 import re
 import commands
 from Autodock_Config import autodock_store_dir,pythonsh_dir
+from Config import temp_pdb_PREFIX
+import gzip
 
 WORK_DIR = os.getcwd()
 CURRENT_DIR = os.getcwd()+'/mapping'
 #os.chdir(CURRENT_DIR)
+
+BUFSIZE = 1024 * 8
+
+class GZipTool:
+    def __init__(self, bufSize):
+        self.bufSize = bufSize
+        self.fin = None
+        self.fout = None
+
+    def compress(self, src, dst):
+        self.fin = open(src, 'rb')
+        self.fout = gzip.open(dst, 'wb')
+
+        self.__in2out()
+
+    def decompress(self, gzFile, dst):
+        self.fin = gzip.open(gzFile, 'rb')
+        self.fout = open(dst, 'wb')
+
+        self.__in2out()
+
+    def cp(self, src ,dst):
+        self.fin = open(src,'rb')
+        self.fout = open(dst,'wb')
+        self.__in2out()
+
+    def __in2out(self, ):
+        while True:
+            buf = self.fin.read(self.bufSize)
+            if len(buf) < 1:
+                break
+            self.fout.write(buf)
+
+        self.fin.close()
+        self.fout.close()
 
 def set_new_folder(PDBname,storedir):
     '''
@@ -45,8 +82,53 @@ def fn_timer(function):
 
     return function_timer
 
+def copy_pdbfile(filepos,tarpos,zipped=False):
 
-def prepare_receptor(filename,pdbname,OVERWRITE=False):
+    if zipped:
+        tool = GZipTool(BUFSIZE)
+        try:
+            tool.decompress(filepos,tarpos)
+        except:
+            raise TypeError
+    else:
+        tool = GZipTool(BUFSIZE)
+        try:
+            tool.cp(filepos, tarpos)
+        except:
+            raise TypeError
+
+
+@fn_timer
+def repair_pdbfile(filename,pdbname,OVERWRITE=False):
+    '''
+    repair pdbfiles with add hydrogen
+    :param filename:
+    :param OVERWRITE:
+    :return:
+    '''
+    real_dir = temp_pdb_PREFIX
+    real_filepos= os.path.join(real_dir,pdbname+'.pdb')
+    copy_pdbfile(filename,real_filepos,zipped=(filename.split('.')[-1]=='gz'))
+
+    if not os.path.exists(real_filepos) or OVERWRITE:
+        os.chdir(CURRENT_DIR)
+        #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1}qt -U nphs_lps_waters'.format(real_filepos, real_filepos)
+        cmd = 'obabel {} -opdb -O {} -d'.format(real_filepos,real_filepos)
+        stat ,out = commands.getstatusoutput(cmd)
+        #print stat,out
+        os.chdir(WORK_DIR)
+        if stat==256:
+            print out
+            return 'NA'
+
+    #Convert into pdb files
+    #os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
+    #os.remove(real_filepos+'qt')
+
+    return os.path.join(os.getcwd(),real_filepos)
+
+
+def prepare_receptor(filename,pdbname,OVERWRITE=True):
     '''
     prepare receptor pdbqt files
     :param filename: the file name
@@ -61,7 +143,7 @@ def prepare_receptor(filename,pdbname,OVERWRITE=False):
     real_filepos= os.path.join(real_dir,filename.split('/')[-1])+'qt'
     if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
-        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -r {0} -o {1}'.format(filename, real_filepos)
+        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1} -U nphs_lps_waters'.format(filename, real_filepos)
         #print cmd
         stat ,out = commands.getstatusoutput(cmd)
         #print stat,out
@@ -89,7 +171,7 @@ def prepare_ligand(filename,pdbname,OVERWRITE=False):
     real_filepos = os.path.join(real_dir, filename.split('/')[-1]) + 'qt'
     if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
-        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -l {0} -o {1} '.format(filename, real_filepos)
+        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -l {0} -o {1} -g'.format(filename, real_filepos)
         stat ,out = commands.getstatusoutput(cmd)
         os.chdir(WORK_DIR)
         if stat==256:
@@ -156,12 +238,13 @@ def do_auto_grid(receptor,ligand,center=None):
 
     #Suppose autogrid and autodock has installed
     os.chdir(real_dir)
-    cmd = 'autogrid4 -p {0}.gpf -l {0}.glg'.format(glg_output_dir)
+    cmd = 'autogrid4 -p {0}.gpf -l {0}.glg'.format(naming)
 
     #Anything goes wrong , return False
     stat, out = commands.getstatusoutput(cmd)
     os.chdir(WORK_DIR)
     if stat==256:
+        print out
         return False
 
 
@@ -212,7 +295,7 @@ def do_auto_dock(receptor,ligand,center=None):
 
     #prepare dpf files
     cmd=os.path.join(pythonsh_dir,'pythonsh') + \
-        ' prepare_dpf42.py -l {} -r {} -o {}.dpf'.format(lloc, rloc, dlg_output_dir )
+        ' prepare_dpf4.py -l {} -r {} -o {}.dpf'.format(lloc, rloc, dlg_output_dir )
     stat, out = commands.getstatusoutput(cmd)
     # If anything goes wrong , return False
     if stat == 256:
@@ -222,7 +305,7 @@ def do_auto_dock(receptor,ligand,center=None):
     # Suppose autogrid and autodock has installed
     os.chdir(real_dir)
     # Do real auto dock
-    cmd = 'autodock4 -p {0}.dpf -l {0}.dlg'.format(dlg_output_dir)
+    cmd = 'autodock4 -p {0}.dpf -l {0}.dlg'.format(naming)
     stat, out = commands.getstatusoutput(cmd)
     os.chdir(WORK_DIR)
     if stat == 256:
@@ -253,7 +336,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
 
     #prepare ligand
     if lname.split('.')[-1] == 'pdb':
-        print 'here'
+        #print 'here'
         if not prepare_ligand(ligand,pdbname,OVERWRITE=True):
             return 'NA'
         lname+='qt'
@@ -261,7 +344,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
         if lname.split('.')[-1] != 'pdbqt':
             return 'NA'
 
-    print 'here'
+    #print 'here'
     # get the absolute location
     real_dir = os.path.join(autodock_store_dir, pdbname)
 
@@ -297,6 +380,36 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
                 return 'NA'
 
     return 'NA'
+
+def vector_from_gridmap(mapfilename,BOX=21):
+    '''
+    Get the
+    :param mapfilename:
+    :return:
+    '''
+    try:
+        with open(mapfilename,'rb') as f:
+            ct=0
+            answer=[]
+            for line in f:
+                ct+=1
+                if ct>=7:
+                    answer.append(float(line.rstrip('\n')))
+            return answer
+    except:
+        return 'NA'
+
+def fetch_gridmaps(map_prefix ,BOX=21):
+    type= ['A','C','d','e','HD','N','NA','OA']
+    vectors= []
+    try:
+        for each in type:
+            real_dir= os.path.join(autodock_store_dir,map_prefix.split('_')[0])
+            real_pos= os.path.join(real_dir,map_prefix+'.'+each+'.map')
+            vectors.append(vector_from_gridmap(real_pos,BOX=BOX))
+        return vectors
+    except:
+        return 'NA'
 
 if __name__=='__main__':
     #Example on how to finish auto docking process

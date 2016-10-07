@@ -14,18 +14,18 @@ SUMMARY_COLUMN = ['PDB name','PDB type', 'ligand NAME', 'ligand index in PDB', '
 #file name of the result. All results will be recorded in './result/' folder automatically
 #TODO add options to save to another place (maybe)
 #PAIR_SUMMARY = 'lignad-receptor_pair.csv'
-PAIR_SUMMARY =  'test.csv'
+PAIR_SUMMARY =  'report.csv'
 
 #We don't want to delete these files in './data'.
 #This is a very awful way to make this one, but quite useful.
 RESERVE_NAME = ['fake-ligand.pdb']
 
 
-def generate_one_map(PDBname, BOX=20):
+def generate_one_map(PDBname, PDBpos, BOX=20):
     # mapping files will be generated in this folder (for each pdb file)
     set_new_folder(PDBname,result_PREFIX)
 
-    PDBIndex = pdb_container(PDBname,filepos=pdb_PREFIX+PDBname.lower()+'.pdb.gz')
+    PDBIndex = pdb_container(PDBname,filepos=PDBpos)
     # PDBIndex.set_all_vina_benchmark(Box=BOX)
     PDBtype = PDBIndex.get_pdb_type()
 
@@ -61,7 +61,7 @@ def generate_one_map(PDBname, BOX=20):
     writer.close()
 
     #Do this with the risk
-    clean_temp_data()
+    #clean_temp_data()
 
 
 
@@ -84,16 +84,26 @@ def clean_temp_data():
         if os.path.exists(loc) and filename not in RESERVE_NAME:
             os.remove(loc)
 
+def repair_one_pdb(PDBname):
+    real_dir = os.path.join(pdb_PREFIX, PDBname+'.pdb.gz')
+    return repair_pdbfile(real_dir, PDBname, OVERWRITE=True)
+
 @fn_timer
 def for_fun():
-    test = ['2dth']
+    test = ['2xqt']
+    #test = PDB_tar[0::200]
     print test
 
     initialize_summary_file(PAIR_SUMMARY)
 
     for each in test:
         each= each.lower()
-        generate_one_map(each)
+        #position = repair_one_pdb(each)
+        #print position
+        #if position=='NA':
+        #    print 'Error'
+        #    continue
+        generate_one_map(each,os.path.join(pdb_PREFIX,each+'.pdb.gz'))
 
 if __name__=='__main__':
     for_fun()

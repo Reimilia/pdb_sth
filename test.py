@@ -7,7 +7,7 @@ from Config import *
 import os,sys,io
 import gzip
 from vector_gen import pdb_container,fake_pdb_container
-from Config import pdb_PREFIX
+from mapping import *
 
 
 #PDB_tar=['1uwj']
@@ -50,3 +50,11 @@ print P
 print N
 print C
 '''
+
+#prepare_receptor('/home/wy/Documents/BCH_coding/pdb_data_extracter/1bib.pdb','1bib')
+#I= pdb_container('1bib',filepos='/home/wy/Documents/BCH_coding/pdb_data_extracter/result/1bib/1bib.pdb',OUT=True)
+
+#real_dir= os.path.join(pdb_PREFIX,'1bib.pdb.gz')
+#repair_pdbfile(real_dir,'1bib',OVERWRITE=True)
+
+A= pdb_container('/media/wy/data/all/aa2ar/aa2ar_decoys_1_docked.pdb')

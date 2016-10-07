@@ -39,7 +39,9 @@ fake_hetero_PREFIX = '/media/wy/data/set/set/'
 #where we store output csv files
 fake_result_PREFIX = '/media/wy/data/result/'
 #name of fake pdb files
-fake_pdb_name = 'receptor.pdb'
+fake_pdb_name = 'fake-ligand.pdb'
+# Where to store autodock mapping results
+autodock_store_dir = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result/'
 
 # Location of pythonsh environment MGLTools provide (because its python 2.5 and use some abandoned characteristics)
 # We need this filelocation to convert PDB to PDBqt in a quick way.
