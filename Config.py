@@ -21,11 +21,24 @@ MUST = "PDB ID(s) for Ligand-Target Complex"
 #Thought to be the name, but not, its just some ID
 NAME = 'BindingDB Reactant_set_id'
 
-# How many columns will the output csv files have
-Total_columns= 15
 
 # The keys need to be recorded
 key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
+experiment_part=['NAME',NAME,'Similarity']+key
+electype= ['A','C','d','e','HD','N','NA','OA']
+
+PDB_part = ['Target PDB', 'PDBtype', 'PDB_ligand_name' , 'PDB_ligand_resIndex', 'Center of Vector', 'Rotation Degree(pi)', 'PDBSequence', 'Atom_Vector']
+
+#Complete the column name
+for i in range(8):
+    PDB_part.append('protein_gridmaps_'+electype[i])
+for i in range(8):
+    PDB_part.append('ligand_gridmaps_'+electype[i])
+for i in range(8):
+    PDB_part.append('complex_gridmaps_'+electype[i])
+
+# How many columns will the output csv files have
+Total_columns= len(experiment_part)+ len(PDB_part)
 
 # the name of the result after merge all things together
 merged_Filename = 'result.csv'

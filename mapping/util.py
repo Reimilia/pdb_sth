@@ -400,6 +400,12 @@ def vector_from_gridmap(mapfilename,BOX=21):
         return 'NA'
 
 def fetch_gridmaps(map_prefix ,BOX=21):
+    '''
+    Convert group of gridmaps into vectors (8*21*21*21 for now)
+    :param map_prefix: the file prefix , since autogrid's naming rules is same, so just provide anyname except .[].map
+    :param BOX:  Boxsize
+    :return:
+    '''
     type= ['A','C','d','e','HD','N','NA','OA']
     vectors= []
     try:

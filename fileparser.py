@@ -26,7 +26,7 @@ logging.getLogger('').addHandler(fileHandler)
 
 def list_formatter(table):
     '''
-    I don't know if there is a better solution to format a list into
+    I don't know if there is a better solution to format a list into string
     :param table:
     :return:
     '''
@@ -103,7 +103,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
     # csv writer
     writer = file(filedir, 'w')
     w = csv.writer(writer)
-    w.writerow(['Name',NAME,'Target PDB','ResIndex','Similarity']+key+['Center of Vector','Rotation Degree(pi)','Vector','Sequence'])
+    w.writerow(experiment_part+PDB_part)
 
     # combine as file direction
     sdfone = filedir_PREFIX + src.upper() + '.sdf'
@@ -140,7 +140,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
         mol = ''
         LINE_BEGIN=True
         Wait_Signal= 0
-        one_line=['']*Total_columns
+        one_line=['']*len(experiment_part)
         #print 'here'
         for line in input_sdf:
             mol+=line
@@ -155,7 +155,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
                 if Wait_Signal==999:
                     one_line[1]=line.lstrip(' ').rstrip('\n')
                 else:
-                    one_line[4+Wait_Signal]= line.lstrip(' ').rstrip('\n')
+                    one_line[2+Wait_Signal]= line.lstrip(' ').rstrip('\n')
                 Wait_Signal= 0
 
             for i in range(len(key)):
@@ -171,23 +171,15 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
                 o.write(mol)
                 o.close()
 
+
                 # Find pairs with at least 85% similarity scores
                 ans_list =PDBindex.find_similar_target(fileforbabel)
 
-                one_line[-1]= PDBindex.sequence
                 count +=1
                 for eachone in ans_list:
                     #Combine each part together
-                    assert 'id' in eachone
-                    assert 'cp' in eachone
-                    assert 'raw_vector' in eachone
-                    one_line[2] = src
-                    one_line[3] = eachone['id']
-                    one_line[4] = eachone['cp']
-                    one_line[-2] = list_formatter(eachone['raw_vector'])
-                    #one_line[-3] = '[{},{},{}]'.format(eachone['center'][0],eachone['center'][1],eachone['center'][2])
-                    one_line[-3] = list_formatter(eachone['rotation'])
-                    one_line[-4] = list_formatter(eachone['center'])
+                    one_line[2] = eachone['cp']
+                    one_line = one_line + PDBindex.bundle_result(eachone['id'])
                     # print one_line
                     active_count += 1
                     w.writerow(one_line)
