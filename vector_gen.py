@@ -78,6 +78,9 @@ class pdb_container:
         self.pure_protein= None
         self.pure_nucleic= None
 
+        if not os.path.exists('data/'+PDB):
+            os.mkdir('data/'+PDB)
+
         # filepos is to determine whether we download pdb files from wwPDB
         # or use what we have
         # Using downloaded is better
@@ -116,8 +119,8 @@ class pdb_container:
         if hetero is None or other is None:
             return
         if OUT:
-            writePDB('data/{}_receptor.pdb'.format(PDB),other)
-            writePDB('data/{}_complex.pdb'.format(PDB),parse)
+            writePDB('data/{0}/{0}_receptor.pdb'.format(PDB),other)
+            writePDB('data/{0}/{0}_complex.pdb'.format(PDB),parse)
 
 
 
@@ -133,9 +136,9 @@ class pdb_container:
 
             # Extract this ligand from protein (as input for openbabel)
             if filepos is not None:
-                filename = 'data/{}_{}_ligand.pdb'.format(filepos.split('/')[-1].split('.')[0], ResId)
+                filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(filepos.split('/')[-1].split('.')[0], ResId)
             else:
-                filename = 'data/{}_{}_ligand.pdb'.format(PDB, ResId)
+                filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
 
             if not os.path.isfile(filename):
                 if not os.path.exists('data'):
@@ -215,9 +218,9 @@ class pdb_container:
 
                 if OUT:
                     #Output the pure protein part in the box and the ligand-protein complex part
-                    filename2= 'data/{}_{}_receptor.pdb'.format(PDB, ResId)
+                    filename2= 'data/{0}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
                     writePDB(filename2, nearby)
-                    filename2= 'data/{}_{}_complex.pdb'.format(PDB,ResId)
+                    filename2= 'data/{0}/{0}_{1}_complex.pdb'.format(PDB,ResId)
                     writePDB(filename2, nearby+pick_one)
 
             #Save into the dict for future locating

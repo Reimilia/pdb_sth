@@ -9,7 +9,7 @@ from functools import wraps
 import logging
 from Config import *
 import urllib
-import time
+from mapping import repair_pdbfile
 
 '''
 The main program to extract molecules in .sdf files and compare with ligands on PDB files.
@@ -66,7 +66,7 @@ def fn_timer(function):
 
 
 @fn_timer
-def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.sdf'):
+def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforbabel='a.sdf'):
     '''
 
     :param src: pdb name
@@ -127,7 +127,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
     # Combine as pdb file address
     # We generate a class to store each ligands as a dict, and use a method
     # to find the similar ones by tanimoto comparing scores to specific input files
-    PDBindex= pdb_container(src,filepos=pdb_PREFIX+src.lower()+'.pdb.gz')
+    PDBindex= pdb_container(src,filepos=filepos)
 
     # In each time
     # We write one single molecule in to a sdf file called a.sdf
@@ -210,7 +210,7 @@ def mol_ligand_tar_generator(src,statistic_csv=None,CLEAN=False,fileforbabel='a.
         writer.close()
     return True
 
-def do_one_pdb(pdb,REPORTCSV=None,index=0):
+def do_one_pdb(pdb,filename=None,REPORTCSV=None,index=0):
     '''
     For each target-complex pdb , this program check if .pdb file exists
     if not ,download first then call the function to match all possible target-ligands with
@@ -223,11 +223,12 @@ def do_one_pdb(pdb,REPORTCSV=None,index=0):
     # For each pdb name , there should be one corresponding molecule files.
     # This will generate one result file.
     pdb = pdb.lower()
-    filename = os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb))
+    if filename is None:
+        filename = os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb))
     if os.path.exists(filename):
         # pdbfile exists
         logging.info(pdb + ' has already exists')
-        return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV,fileforbabel='{}.sdf'.format(index))
+        return mol_ligand_tar_generator(pdb,filename,statistic_csv=REPORTCSV,fileforbabel='{}.sdf'.format(index))
 
     else:
         # Not exists, download from the internet
@@ -246,7 +247,7 @@ def do_one_pdb(pdb,REPORTCSV=None,index=0):
                 #If we download files successfully, then we will run the program
                 print 'download {} successfully'.format(pdb)
                 logging.info('download {} successfully'.format(pdb))
-                return mol_ligand_tar_generator(pdb,statistic_csv=REPORTCSV,fileforbabel='{}.sdf'.format(index))
+                return mol_ligand_tar_generator(pdb,filename,statistic_csv=REPORTCSV,fileforbabel='{}.sdf'.format(index))
         o.close()
 
 def initiate_report():
@@ -266,9 +267,12 @@ if __name__ == '__main__':
     for pdb in PDB_tar:
         #dirty way to do small scale tests
         #Use a count variable
-        if ct==10:
+        if ct==1:
             break
-        if do_one_pdb(pdb,REPORTCSV=report):
+        pdb =pdb.lower()
+        real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
+
+        if do_one_pdb(pdb,filename=real_dir,REPORTCSV=report):
             DONE.append(pdb)
         else:
             FAIL.append(pdb)

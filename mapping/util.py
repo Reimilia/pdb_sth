@@ -107,23 +107,24 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     :return:
     '''
     real_dir = temp_pdb_PREFIX
+    print filename
     real_filepos= os.path.join(real_dir,pdbname+'.pdb')
     copy_pdbfile(filename,real_filepos,zipped=(filename.split('.')[-1]=='gz'))
 
-    if not os.path.exists(real_filepos) or OVERWRITE:
-        os.chdir(CURRENT_DIR)
-        #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1}qt -U nphs_lps_waters'.format(real_filepos, real_filepos)
-        cmd = 'obabel {} -opdb -O {} -d'.format(real_filepos,real_filepos)
-        stat ,out = commands.getstatusoutput(cmd)
-        #print stat,out
-        os.chdir(WORK_DIR)
-        if stat==256:
-            print out
-            return 'NA'
+    os.chdir(CURRENT_DIR)
+    cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos, real_filepos)
+    #cmd = 'obabel {} -opdb -O {} -d'.format(real_filepos,real_filepos)
+    stat ,out = commands.getstatusoutput(cmd)
+    print stat,out
+    os.chdir(WORK_DIR)
+    if stat==256:
+        print out
+        return 'NA'
 
+    print real_filepos
     #Convert into pdb files
-    #os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
-    #os.remove(real_filepos+'qt')
+    os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
+    os.remove(real_filepos+'qt')
 
     return os.path.join(os.getcwd(),real_filepos)
 
