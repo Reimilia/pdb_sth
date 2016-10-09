@@ -81,18 +81,29 @@ class pdb_container:
         if not os.path.exists('data/'+PDB):
             os.mkdir('data/'+PDB)
 
+        #Do repair (or copy) first
+        if filepos is not None:
+            filepos= repair_pdbfile(filepos,PDB)
+
+
         # filepos is to determine whether we download pdb files from wwPDB
         # or use what we have
         # Using downloaded is better
         try:
             if filepos is not None:
-                parse = parsePDB(filepos)
+                parse,header = parsePDB(filepos,header=True)
             else:
-                parse = parsePDB(PDB)
+                parse,header = parsePDB(PDB,header=True)
         except:
             #raise IOError
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
             return
+
+        #Save resolution
+        try:
+            self.resolution = header['resolution']
+        except:
+            self.resolution = 'NA'
 
         #Generating sequence here
         #storage = []
@@ -113,17 +124,18 @@ class pdb_container:
 
         self.pure_protein = parse.select('protein')
         self.pure_nucleic = parse.select('nucleic')
-        self.other = other
+
 
         # bad one (no hetero or protein)
         if hetero is None or other is None:
             return
+        self.other = other
+        self.hetero = hetero
+
         if OUT:
             writePDB('data/{0}/{0}_receptor.pdb'.format(PDB),other)
-            writePDB('data/{0}/{0}_complex.pdb'.format(PDB),parse)
-
-
-
+            prepare_receptor(os.getcwd()+'/data/{0}/{0}_receptor.pdb'.format(PDB),PDB)
+            prepare_receptor(os.getcwd()+'/data/{0}/{0}.pdb'.format(PDB), PDB)
 
         #Make vectors for every single hetero parts
         #Their values will be stored in a dict
@@ -139,13 +151,13 @@ class pdb_container:
                 filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(filepos.split('/')[-1].split('.')[0], ResId)
             else:
                 filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
-
             if not os.path.isfile(filename):
                 if not os.path.exists('data'):
                     os.mkdir('data')
 
             if OUT and not os.path.exists(filename):
                 writePDB(filename, pick_one)
+                pdb_to_mol2(filename, ''.join(filename.split('.')[:-2]) + '.mol')
 
             # Get coordinate of center
             xyz = pick_one.getCoords()
@@ -220,21 +232,27 @@ class pdb_container:
                     #Output the pure protein part in the box and the ligand-protein complex part
                     filename2= 'data/{0}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
                     writePDB(filename2, nearby)
+                    pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
                     filename2= 'data/{0}/{0}_{1}_complex.pdb'.format(PDB,ResId)
                     writePDB(filename2, nearby+pick_one)
-
+                    pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
             #Save into the dict for future locating
+            naming = '{}_{}'.format(PDB, ResId)
 
-            # Do autogrid part:
-
+            # Do autogrid mapgeneration:
+            ligand_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_ligand.pdb')
+            receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_receptor.pdb')
+            '''
             fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
-            naming = '{}_{}'.format(PDB,ResId)
-            ligand_filename = os.path.join(temp_pdb_PREFIX, naming + '_ligand.pdb')
-            receptor_filename = os.path.join(temp_pdb_PREFIX, naming + '_receptor.pdb')
-            complex_filename = os.path.join(temp_pdb_PREFIX, naming + '_complex.pdb')
+
+
+            complex_filename = os.path.join(temp_pdb_PREFIX, PDB+'/'+naming + '_complex.pdb')
             do_auto_grid(receptor_filename, fake_ligand_filename, center=middle)
             do_auto_grid(ligand_filename, fake_ligand_filename, center=middle)
             do_auto_grid(complex_filename, fake_ligand_filename, center=middle)
+            '''
+            do_auto_dock(receptor_filename,ligand_filename,center=middle)
+
 
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
@@ -246,11 +264,11 @@ class pdb_container:
                 'id': ResId,
                 'Resname': pick_one.getResname(),
                 'ligand': pick_one,
-                'vina_score' : 'NA',
+                'vina_score' : do_auto_vina_score(receptor_filename,ligand_filename,middle),
                 'original_one': True,
-                'gridmap_protein': fetch_gridmaps(naming+'_receptor'),
-                'gridmap_ligand': fetch_gridmaps(naming+'_ligand'),
-                'gridmap_complex': fetch_gridmaps(naming+'_complex')
+                #'gridmap_protein': fetch_gridmaps(naming+'_receptor'),
+                #'gridmap_ligand': fetch_gridmaps(naming+'_ligand'),
+                #'gridmap_complex': fetch_gridmaps(naming+'_complex')
             }
 
 
@@ -303,7 +321,7 @@ class pdb_container:
         '''
         Render results into full vectors which contains info from pdbs
         With the order:
-        PDBname PDBtype PDB_ligand_name PDB_ligand_resIndex center rotation PDBsequence atom_vector protein_gridmaps ligand_gridmaps complex_gridmaps
+        PDBname PDBtype PDB_ligand_name PDB_ligand_resIndex center rotation resolution autodock_vina_score PDBsequence atom_vector
         :param ResId:
         :return:
         '''
@@ -318,16 +336,17 @@ class pdb_container:
         info_line.append(dict['id'])
         info_line.append(list_formatter(dict['center']))
         info_line.append(list_formatter(dict['rotation']))
+        info_line.append(dict['vina_score'])
         info_line.append(self.sequence)
         info_line.append(list_formatter(dict['raw_vector']))
-        for index in range(8):
-            info_line.append(list_formatter(dict['gridmap_protein'][index]))
+        #for index in range(8):
+        #    info_line.append(list_formatter(dict['gridmap_protein'][index]))
 
-        for index in range(8):
-            info_line.append(list_formatter(dict['gridmap_ligand'][index]))
+        #for index in range(8):
+        #    info_line.append(list_formatter(dict['gridmap_ligand'][index]))
 
-        for index in range(8):
-            info_line.append(list_formatter(dict['gridmap_complex'][index]))
+        #for index in range(8):
+        #    info_line.append(list_formatter(dict['gridmap_complex'][index]))
 
         return info_line
 
@@ -452,16 +471,20 @@ class pdb_container:
                     writePDB(filename2, nearby + pick_one)
 
             # Save into the dict for future locating
+            naming = '{}_{}'.format(self.PDBname, ResId)
 
             # Do autogrid part:
-            fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
-            naming = '{}_{}'.format(self.PDBname, ResId)
             ligand_filename = os.path.join(temp_pdb_PREFIX, naming + '_ligand.pdb')
             receptor_filename = os.path.join(temp_pdb_PREFIX, naming + '_receptor.pdb')
+            '''
+            fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
+
+
             complex_filename = os.path.join(temp_pdb_PREFIX, naming + '_complex.pdb')
             do_auto_grid(receptor_filename, fake_ligand_filename, center=middle)
             do_auto_grid(ligand_filename, fake_ligand_filename, center=middle)
             do_auto_grid(complex_filename, fake_ligand_filename, center=middle)
+            '''
 
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
@@ -474,11 +497,11 @@ class pdb_container:
                 'id': ResId,
                 'Resname': pick_one.getResname(),
                 'ligand': pick_one,
-                'vina_score': 'NA',
+                'vina_score': do_auto_vina_score(receptor_filename,ligand_filename,middle),
                 'original_one': False,
-                'gridmap_protein': fetch_gridmaps(naming + '_receptor'),
-                'gridmap_ligand': fetch_gridmaps(naming + '_ligand'),
-                'gridmap_complex': fetch_gridmaps(naming + '_complex')
+                #'gridmap_protein': fetch_gridmaps(naming + '_receptor'),
+                #'gridmap_ligand': fetch_gridmaps(naming + '_ligand'),
+                #'gridmap_complex': fetch_gridmaps(naming + '_complex')
 
             }
 

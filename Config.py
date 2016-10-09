@@ -27,15 +27,15 @@ key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
 experiment_part=['NAME',NAME,'Similarity']+key
 electype= ['A','C','d','e','HD','N','NA','OA']
 
-PDB_part = ['Target PDB', 'PDBtype', 'PDB_ligand_name' , 'PDB_ligand_resIndex', 'Center of Vector', 'Rotation Degree(pi)', 'PDBSequence', 'Atom_Vector']
+PDB_part = ['Target PDB', 'PDBtype', 'PDB_ligand_name' , 'PDB_ligand_resIndex', 'Center of Vector', 'Rotation Degree(pi)', 'Autodock_vina_score (kcal/mol)','PDBSequence', 'Atom_Vector']
 
 #Complete the column name
-for i in range(8):
-    PDB_part.append('protein_gridmaps_'+electype[i])
-for i in range(8):
-    PDB_part.append('ligand_gridmaps_'+electype[i])
-for i in range(8):
-    PDB_part.append('complex_gridmaps_'+electype[i])
+#for i in range(8):
+#    PDB_part.append('protein_gridmaps_'+electype[i])
+#for i in range(8):
+#    PDB_part.append('ligand_gridmaps_'+electype[i])
+#for i in range(8):
+#    PDB_part.append('complex_gridmaps_'+electype[i])
 
 # How many columns will the output csv files have
 Total_columns= len(experiment_part)+ len(PDB_part)

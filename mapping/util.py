@@ -52,6 +52,20 @@ class GZipTool:
         self.fin.close()
         self.fout.close()
 
+def pdb_to_mol2(src,tar):
+    '''
+    convert pdb ligands into mol2 files
+    :param src:
+    :param tar:
+    :return:
+    '''
+    cmd = 'babel -ipdb {} -omol2 {} '.format(src,tar)
+    stat,out = commands.getstatusoutput(cmd)
+    if stat==256:
+        print out
+        return False
+    return True
+
 def set_new_folder(PDBname,storedir):
     '''
     :param PDBname:
@@ -89,7 +103,7 @@ def copy_pdbfile(filepos,tarpos,zipped=False):
         try:
             tool.decompress(filepos,tarpos)
         except:
-            raise TypeError
+            raise TypeError("unable to decompress at "+filepos)
     else:
         tool = GZipTool(BUFSIZE)
         try:
@@ -108,23 +122,23 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     '''
     real_dir = temp_pdb_PREFIX
     print filename
-    real_filepos= os.path.join(real_dir,pdbname+'.pdb')
+    real_filepos= os.path.join(real_dir,pdbname+'/'+pdbname+'.pdb')
     copy_pdbfile(filename,real_filepos,zipped=(filename.split('.')[-1]=='gz'))
 
-    os.chdir(CURRENT_DIR)
-    cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos, real_filepos)
-    #cmd = 'obabel {} -opdb -O {} -d'.format(real_filepos,real_filepos)
-    stat ,out = commands.getstatusoutput(cmd)
-    print stat,out
-    os.chdir(WORK_DIR)
-    if stat==256:
-        print out
-        return 'NA'
+    #os.chdir(CURRENT_DIR)
+    #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1}qt -A hydrogens -U nphs_lps_waters'.format(real_filepos, real_filepos)
+    #cmd = 'obabel {} -opdb -O {} -h'.format(real_filepos,real_filepos)
+    #stat ,out = commands.getstatusoutput(cmd)
+    #print stat,out
+    #os.chdir(WORK_DIR)
+    #if stat==256:
+    #    print out
+    #    return 'NA'
 
     print real_filepos
     #Convert into pdb files
-    os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
-    os.remove(real_filepos+'qt')
+    #os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
+    #os.remove(real_filepos+'qt')
 
     return os.path.join(os.getcwd(),real_filepos)
 
@@ -370,6 +384,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
 
     # find the score in result
     ls = command.read()
+    print ls
     for line in ls.split('\n'):
         if 'Affinity' in line:
             # find the real number in this line

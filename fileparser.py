@@ -104,6 +104,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
     writer = file(filedir, 'w')
     w = csv.writer(writer)
     w.writerow(experiment_part+PDB_part)
+    print len(experiment_part+PDB_part)
 
     # combine as file direction
     sdfone = filedir_PREFIX + src.upper() + '.sdf'
@@ -179,10 +180,10 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
                 for eachone in ans_list:
                     #Combine each part together
                     one_line[2] = eachone['cp']
-                    one_line = one_line + PDBindex.bundle_result(eachone['id'])
                     # print one_line
                     active_count += 1
-                    w.writerow(one_line)
+                    w.writerow(one_line + PDBindex.bundle_result(eachone['id']))
+
 
                 if len(ans_list) == 0:
                     bad_one += 1
@@ -270,9 +271,9 @@ if __name__ == '__main__':
         if ct==1:
             break
         pdb =pdb.lower()
-        real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
+        #real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
 
-        if do_one_pdb(pdb,filename=real_dir,REPORTCSV=report):
+        if do_one_pdb(pdb,REPORTCSV=report):
             DONE.append(pdb)
         else:
             FAIL.append(pdb)

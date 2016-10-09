@@ -57,4 +57,10 @@ print C
 #real_dir= os.path.join(pdb_PREFIX,'1bib.pdb.gz')
 #repair_pdbfile(real_dir,'1bib',OVERWRITE=True)
 
-A= pdb_container('/media/wy/data/all/aa2ar/aa2ar_decoys_1_docked.pdb')
+#A= pdb_container('/media/wy/data/all/aa2ar/aa2ar_decoys_1_docked.pdb')
+
+import pandas as pd
+
+chunks = pd.read_csv('result/filter_1avd.csv',iterator = True)
+chunk = chunks.get_chunk(5)
+print chunk
