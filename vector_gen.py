@@ -19,9 +19,9 @@ For local installation, see: http://prody.csb.pitt.edu/downloads/
 '''
 
 # Tag for hetero atoms
-HETERO_PART =1
+HETERO_PART = 'L'
 # Tag for protein atoms
-PROTEIN_PART = 2
+PROTEIN_PART = 'P'
 
 # score endurance with confidence
 CONFIDENCE = 0.85
@@ -74,21 +74,21 @@ class pdb_container:
         self.PDBname= PDB
         self.heterodict = {}
         self.ct=0
-        self.sequence = ''
+        self.sequence = {}
         self.pure_protein= None
         self.pure_nucleic= None
+        self.pdb_filename = filepos.split('/')[-1]
 
         if not os.path.exists('data/'+PDB):
             os.mkdir('data/'+PDB)
 
-        #Do repair (or copy) first
-        if filepos is not None:
-            filepos= repair_pdbfile(filepos,PDB)
+
 
 
         # filepos is to determine whether we download pdb files from wwPDB
         # or use what we have
         # Using downloaded is better
+        # parse header for first time
         try:
             if filepos is not None:
                 parse,header = parsePDB(filepos,header=True)
@@ -98,47 +98,92 @@ class pdb_container:
             #raise IOError
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
             return
-
         #Save resolution
         try:
             self.resolution = header['resolution']
         except:
             self.resolution = 'NA'
 
+        self.pure_protein = parse.select('protein')
+        self.pure_nucleic = parse.select('nucleic')
+
+        # dirty way to throw away nucleic one
+        if self.pure_nucleic is not None:
+            return
+
+        '''
+        # Do repair (or copy) and parse again
+        if filepos is not None:
+           filepos = repair_pdbfile(filepos, PDB)
+
+        # parse header for first time
+        try:
+            if filepos is not None:
+                parse = parsePDB(filepos)
+            else:
+                parse = parsePDB(PDB)
+        except:
+            # raise IOError
+            logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
+            return
+        '''
+
+
         #Generating sequence here
         #storage = []
+        #split files by chain
+        self.chain_list= []
         for chain in parse.getHierView():
             #print chain
             #for seq in storage:
             #    if chain.getSequence()==seq:
             #        continue
-            self.sequence = self.sequence + repr(chain) +'|' + chain.getSequence()
+            writePDB('data/{0}/{0}_{1}.pdb'.format(PDB,chain.getChid()),chain)
+            self.chain_list.append(chain.getChid())
+            self.sequence[chain.getChid()] = chain.getSequence()
             #storage.append(chain.getSequence())
 
         # magic for selection desired atom group (see instruction of prody)
         # parse = parse.select('not hydrogen')
 
-        hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
-        other = parse.select('protein or nucleic and not (resname ATP or resname ADP)')
-        #print parse.numAtoms(), hetero.numAtoms(), other.numAtoms()
+        #now try to fix the pdb from autodock tools
 
-        self.pure_protein = parse.select('protein')
-        self.pure_nucleic = parse.select('nucleic')
+        self.fixed_receptor = None
+        for each in self.chain_list:
+            chain_file_dir = os.getcwd() + '/data/{0}/{0}_{1}_receptor.pdb'.format(PDB,each)
+            repair_pdbfile(chain_file_dir, PDB)
+            parse = parsePDB(chain_file_dir)
+            if self.fixed_receptor is None:
+                self.fixed_receptor = parse
+            else:
+                self.fixed_receptor += parse
 
 
-        # bad one (no hetero or protein)
-        if hetero is None or other is None:
+
+
+        for each in self.chain_list:
+            self.parse_by_chain(each)
+
+
+    def parse_by_chain(self,chain_name,OUT=True):
+
+        PDB= self.PDBname
+
+        try:
+            parse = parsePDB('data/{0}/{0}_{1}.pdb'.format(PDB,chain_name))
+        except:
             return
-        self.other = other
-        self.hetero = hetero
 
-        if OUT:
-            writePDB('data/{0}/{0}_receptor.pdb'.format(PDB),other)
-            prepare_receptor(os.getcwd()+'/data/{0}/{0}_receptor.pdb'.format(PDB),PDB)
-            prepare_receptor(os.getcwd()+'/data/{0}/{0}.pdb'.format(PDB), PDB)
+        hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
+        # print parse.numAtoms(), hetero.numAtoms(), other.numAtoms()
 
-        #Make vectors for every single hetero parts
-        #Their values will be stored in a dict
+        #if OUT:
+            #Try to fix each chain
+            #writePDB('data/{0}/{0}_{1}_receptor.pdb'.format(PDB,chain), other)
+            #repair_pdbfile(os.getcwd() + '/data/{0}/{0}_{1}_receptor.pdb'.format(PDB,chain), PDB)
+
+        # Make vectors for every single hetero parts
+        # Their values will be stored in a dict
         for pick_one in HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
             if pick_one.numAtoms() <= 3:
@@ -147,10 +192,8 @@ class pdb_container:
             ResId = str(pick_one.getResindex())
 
             # Extract this ligand from protein (as input for openbabel)
-            if filepos is not None:
-                filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(filepos.split('/')[-1].split('.')[0], ResId)
-            else:
-                filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
+            filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
+
             if not os.path.isfile(filename):
                 if not os.path.exists('data'):
                     os.mkdir('data')
@@ -163,26 +206,29 @@ class pdb_container:
             xyz = pick_one.getCoords()
             middle = calcCenter(pick_one)
             # in pi degree , the rotation of the box (if needed)
-            rotation= [0,0,0]
+            rotation = [0, 0, 0]
 
             scale = max(max(xyz[:, 0]) - middle[0], middle[0] - min(xyz[:, 0]),
                         max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
                         max(xyz[:, 2]) - middle[2], middle[2] - min(xyz[:, 2]))
 
             # assert scale <= 10
-            if scale>10:
-                logging.warning('Warning! {} has a ligand out of box scale with {} atom distance to center'.format(PDB, scale))
-                #Now shifting the boxes:
+            if scale > 10:
+                logging.warning(
+                    'Warning! {} has a ligand out of box scale with {} atom distance to center'.format(PDB, scale))
+                # Now shifting the boxes:
                 max_scale = max(max(xyz[:, 0]) - min(xyz[:, 0]),
-                        max(xyz[:, 1])- min(xyz[:, 1]),
-                        max(xyz[:, 2]) - min(xyz[:, 2]))
-                if max_scale>20:
-                    logging.error('Assertion failed, {} has a ligand out of box completely with scale'.format(PDB,scale))
+                                max(xyz[:, 1]) - min(xyz[:, 1]),
+                                max(xyz[:, 2]) - min(xyz[:, 2]))
+                if max_scale > 20:
+                    logging.error(
+                        'Assertion failed, {} has a ligand out of box completely with scale'.format(PDB, scale))
                     continue
-                #Try to move to the new center
-                middle =  [(max(xyz[:, 0])+ min(xyz[:, 0]))/2,(max(xyz[:, 1])+min(xyz[:, 1]))/2,(max(xyz[:, 2])+min(xyz[:, 2]))/2]
+                # Try to move to the new center
+                middle = [(max(xyz[:, 0]) + min(xyz[:, 0])) / 2, (max(xyz[:, 1]) + min(xyz[:, 1])) / 2,
+                          (max(xyz[:, 2]) + min(xyz[:, 2])) / 2]
 
-            #print middle
+            # print middle
             xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
                                      np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
                                      np.linspace(middle[2] - 9.5, middle[2] + 9.5, 20))
@@ -194,54 +240,57 @@ class pdb_container:
             for atom in pick_one.iterAtoms():
                 x, y, z = atom.getCoords()
                 x_pos = int(round(x - vector[0][0]))
-                #assert 0 <= x_pos <= 19
+                # assert 0 <= x_pos <= 19
                 y_pos = int(round(y - vector[0][1]))
-                #assert 0 <= y_pos <= 19
+                # assert 0 <= y_pos <= 19
                 z_pos = int(round(z - vector[0][2]))
-                #assert 0 <= z_pos <= 19
-                if 0<= x_pos <= 19 and 0<=y_pos <= 19 and 0<=z_pos<=19:
-                    #Simply change here to fulfill the mark as 'H_1'
-                    num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName()+'_'+str(HETERO_PART)
+                # assert 0 <= z_pos <= 19
+                if 0 <= x_pos <= 19 and 0 <= y_pos <= 19 and 0 <= z_pos <= 19:
+                    # Simply change here to fulfill the mark as 'H_1'
+                    num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName() + '_' + str(HETERO_PART)
 
             # quick,dirty way to find atoms of protein in cubic boxes
-            defSelectionMacro('inbox','abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]))
+            defSelectionMacro('inbox',
+                              'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
+                                                                                            middle[2]))
 
             # This place might have some potential problem
             # for ADP or ATP , they might either be part of nucleic and the ligand
             # This will cause a severe bug when calculating autovina score
             # TODO fix this issue
-            nearby= other.select('inbox')
+            nearby = self.fixed_receptor.select('inbox')
 
             if nearby is not None:
                 for atom in nearby.iterAtoms():
                     x, y, z = atom.getCoords()
                     x_pos = int(round(x - vector[0][0]))
-                    #assert 0 <= x_pos <= 19
+                    # assert 0 <= x_pos <= 19
                     y_pos = int(round(y - vector[0][1]))
-                    #assert 0 <= y_pos <= 19
+                    # assert 0 <= y_pos <= 19
                     z_pos = int(round(z - vector[0][2]))
-                    #assert 0 <= z_pos <= 19
-                    if 0<=x_pos<=19 and 0<=y_pos<=19 and 0<=z_pos<=19 and num_vector[x_pos * 400 + y_pos * 20 + z_pos]==0:
-                        #Simply change here to fulfill the mark as 'C_2'
-                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName()+'_'+str(PROTEIN_PART)
+                    # assert 0 <= z_pos <= 19
+                    if 0 <= x_pos <= 19 and 0 <= y_pos <= 19 and 0 <= z_pos <= 19 and num_vector[
+                                                x_pos * 400 + y_pos * 20 + z_pos] == 0:
+                        # Simply change here to fulfill the mark as 'C_2'
+                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName() + '_' + str(PROTEIN_PART)
                     else:
                         print atom.getName()
-                        logging.warning('Coorinate {} {} {} found at {}'.format(x_pos,y_pos,z_pos,self.PDBname))
+                        logging.warning('Coorinate {} {} {} found at {}'.format(x_pos, y_pos, z_pos, self.PDBname))
 
                 if OUT:
-                    #Output the pure protein part in the box and the ligand-protein complex part
-                    filename2= 'data/{0}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
+                    # Output the pure protein part in the box and the ligand-protein complex part
+                    filename2 = 'data/{0}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
                     writePDB(filename2, nearby)
                     pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
-                    filename2= 'data/{0}/{0}_{1}_complex.pdb'.format(PDB,ResId)
-                    writePDB(filename2, nearby+pick_one)
+                    filename2 = 'data/{0}/{0}_{1}_complex.pdb'.format(PDB, ResId)
+                    writePDB(filename2, nearby + pick_one)
                     pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
-            #Save into the dict for future locating
+            # Save into the dict for future locating
             naming = '{}_{}'.format(PDB, ResId)
 
             # Do autogrid mapgeneration:
             ligand_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_ligand.pdb')
-            receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_receptor.pdb')
+            receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + PDB + '_receptor.pdb')
             '''
             fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
@@ -251,24 +300,26 @@ class pdb_container:
             do_auto_grid(ligand_filename, fake_ligand_filename, center=middle)
             do_auto_grid(complex_filename, fake_ligand_filename, center=middle)
             '''
-            #do_auto_dock(receptor_filename,ligand_filename,center=middle)
+            # do_auto_dock(receptor_filename,ligand_filename,center=middle)
 
 
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
                 'center': middle,
                 'rotation': rotation,
-                'selectmarco': 'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0],middle[1],middle[2]),
-                'naming': '{}_{}'.format(PDB,ResId),
+                'selectmarco': 'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
+                                                                                             middle[2]),
+                'naming': '{}_{}'.format(PDB, ResId),
+                'chain': chain_name,
                 'filename': filename,
                 'id': ResId,
                 'Resname': pick_one.getResname(),
                 'ligand': pick_one,
-                'vina_score' : do_auto_vina_score(receptor_filename,ligand_filename,middle),
+                'vina_score': do_auto_vina_score(receptor_filename, ligand_filename, middle),
                 'original_one': True,
-                #'gridmap_protein': fetch_gridmaps(naming+'_receptor'),
-                #'gridmap_ligand': fetch_gridmaps(naming+'_ligand'),
-                #'gridmap_complex': fetch_gridmaps(naming+'_complex')
+                # 'gridmap_protein': fetch_gridmaps(naming+'_receptor'),
+                # 'gridmap_ligand': fetch_gridmaps(naming+'_ligand'),
+                # 'gridmap_complex': fetch_gridmaps(naming+'_complex')
             }
 
 
@@ -321,7 +372,7 @@ class pdb_container:
         '''
         Render results into full vectors which contains info from pdbs
         With the order:
-        PDBname PDBtype PDB_ligand_name PDB_ligand_resIndex center rotation resolution autodock_vina_score PDBsequence atom_vector
+        PDBname PDBtype PDB_ligand_name PDB_ligand_resIndex center rotation resolution autodock_vina_para(*6) PDBsequence atom_vector
         :param ResId:
         :return:
         '''
@@ -336,9 +387,15 @@ class pdb_container:
         info_line.append(dict['id'])
         info_line.append(list_formatter(dict['center']))
         info_line.append(list_formatter(dict['rotation']))
-        info_line.append(dict['vina_score'])
+        info_line.append(dict['vina_score']['Affinity'])
+        info_line.append(dict['vina_score']['gauss 1'])
+        info_line.append(dict['vina_score']['gauss 2'])
+        info_line.append(dict['vina_score']['repulsion'])
+        info_line.append(dict['vina_score']['hydrophobic'])
+        info_line.append(dict['vina_score']['Hydrogen'])
+
         info_line.append(self.resolution)
-        info_line.append(self.sequence)
+        info_line.append(self.sequence[dict['chain']])
         info_line.append(list_formatter(dict['raw_vector']))
         #for index in range(8):
         #    info_line.append(list_formatter(dict['gridmap_protein'][index]))

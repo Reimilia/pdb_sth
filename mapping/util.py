@@ -125,17 +125,25 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     real_filepos= os.path.join(real_dir,pdbname+'/'+pdbname+'.pdb')
     copy_pdbfile(filename,real_filepos,zipped=(filename.split('.')[-1]=='gz'))
 
-    #os.chdir(CURRENT_DIR)
-    #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1}qt -A hydrogens -U nphs_lps_waters'.format(real_filepos, real_filepos)
-    #cmd = 'obabel {} -opdb -O {} -h'.format(real_filepos,real_filepos)
-    #stat ,out = commands.getstatusoutput(cmd)
-    #print stat,out
-    #os.chdir(WORK_DIR)
-    #if stat==256:
-    #    print out
-    #    return 'NA'
+    os.chdir(CURRENT_DIR)
+    cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
+    #cmd ='obabel {} -opdb -O {} -h'.format(real_filepos,real_filepos)
+    stat ,out = commands.getstatusoutput(cmd)
+    if stat == 256:
+        print out
+        return 'NA'
 
-    print real_filepos
+    cmd = os.path.join(pythonsh_dir, 'pythonsh') + ' pdbqt_to_pdb.py -f {0}qt -o {0}'.format(real_filepos)
+    # cmd ='obabel {} -opdb -O {} -h'.format(real_filepos,real_filepos)
+    stat, out = commands.getstatusoutput(cmd)
+    print stat, out
+    if stat == 256:
+        print out
+        return 'NA'
+
+    os.chdir(WORK_DIR)
+
+    #print real_filepos
     #Convert into pdb files
     #os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
     #os.remove(real_filepos+'qt')
@@ -143,7 +151,7 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     return os.path.join(os.getcwd(),real_filepos)
 
 
-def prepare_receptor(filename,pdbname,OVERWRITE=True):
+def prepare_receptor(filename,pdbname,OVERWRITE=True,repair=False):
     '''
     prepare receptor pdbqt files
     :param filename: the file name
@@ -158,7 +166,11 @@ def prepare_receptor(filename,pdbname,OVERWRITE=True):
     real_filepos= os.path.join(real_dir,filename.split('/')[-1])+'qt'
     if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
-        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {1} -U nphs_lps_waters'.format(filename, real_filepos)
+        if repair == True:
+            cmd = os.path.join(pythonsh_dir,
+                               'pythonsh') + ' prepare_receptor4.py -r {0} -o {1} -A bonds_hydrogens -U nphs_lps_waters'.format(filename,real_filepos)
+        else:
+            cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -r {0} -o {1} -U nphs_lps_waters'.format(filename, real_filepos)
         #print cmd
         stat ,out = commands.getstatusoutput(cmd)
         #print stat,out
@@ -186,7 +198,7 @@ def prepare_ligand(filename,pdbname,OVERWRITE=False):
     real_filepos = os.path.join(real_dir, filename.split('/')[-1]) + 'qt'
     if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
-        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -l {0} -o {1} -g'.format(filename, real_filepos)
+        cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_ligand4.py -A bonds_hydrogens -l {0} -o {1} -g'.format(filename, real_filepos)
         stat ,out = commands.getstatusoutput(cmd)
         os.chdir(WORK_DIR)
         if stat==256:
@@ -382,20 +394,26 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
 
     os.chdir(WORK_DIR)
 
+    dict_key = ('Affinity','gauss 1','gauss 2','repulsion','hydrophobic','Hydrogen')
+
+    Ans = {}
     # find the score in result
     ls = command.read()
     print ls
     for line in ls.split('\n'):
-        if 'Affinity' in line:
-            # find the real number in this line
-            real_num = re.compile(r"[-+]?\d+\.\d+")
-            score = real_num.search(line.split(':')[1])
-            if score:
-                return float(score.group())
-            else:
-                return 'NA'
+        if '#' in line:
+            continue
+        for each in dict_key:
+            if each in line:
+                # find the real number in this line
+                real_num = re.compile(r"[-+]?\d+\.\d+")
+                score = real_num.search(line.split(':')[1])
+                if score:
+                    Ans[each]=float(score.group())
+                else:
+                    Ans[each]='NA'
 
-    return 'NA'
+    return Ans
 
 def vector_from_gridmap(mapfilename,BOX=21):
     '''

@@ -129,7 +129,8 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
     # We generate a class to store each ligands as a dict, and use a method
     # to find the similar ones by tanimoto comparing scores to specific input files
     PDBindex= pdb_container(src,filepos=filepos)
-
+    if PDBindex.get_pdb_type()!='Protein':
+        return False
     # In each time
     # We write one single molecule in to a sdf file called a.sdf
     # Then use this file to compare with the one we extract from pdb files
@@ -268,7 +269,7 @@ if __name__ == '__main__':
     for pdb in PDB_tar:
         #dirty way to do small scale tests
         #Use a count variable
-        if ct==1:
+        if ct==10:
             break
         pdb =pdb.lower()
         #real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
