@@ -251,7 +251,7 @@ class pdb_container:
             do_auto_grid(ligand_filename, fake_ligand_filename, center=middle)
             do_auto_grid(complex_filename, fake_ligand_filename, center=middle)
             '''
-            do_auto_dock(receptor_filename,ligand_filename,center=middle)
+            #do_auto_dock(receptor_filename,ligand_filename,center=middle)
 
 
             self.heterodict[ResId] = {
@@ -337,6 +337,7 @@ class pdb_container:
         info_line.append(list_formatter(dict['center']))
         info_line.append(list_formatter(dict['rotation']))
         info_line.append(dict['vina_score'])
+        info_line.append(self.resolution)
         info_line.append(self.sequence)
         info_line.append(list_formatter(dict['raw_vector']))
         #for index in range(8):

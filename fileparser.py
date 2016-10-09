@@ -191,7 +191,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
 
                 mol = ''
                 LINE_BEGIN=False
-                o = open(fileforbabel, "a")
+                o = open(fileforbabel, "w")
 
     except:
         logging.error('Unknown error here!')
