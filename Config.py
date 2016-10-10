@@ -4,16 +4,16 @@
 url_prefix = 'https://files.rcsb.org/download/'
 
 #Sorry for the naming confusion, this is the location where the input sdf files (splitted with pdb name) are
-filedir_PREFIX=  '/media/wy/data/raw_data/'
+filedir_PREFIX=  '/home/yw174/pdb_data/raw_data/'
 
 #where pdb files or zip files are
-pdb_PREFIX = '/media/wy/data/pdb_raw/'
+pdb_PREFIX = '/home/yw174/pdb_data/pdb_raw/'
 
 #where temporary pdb files are
-temp_pdb_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/data'
+temp_pdb_PREFIX = '/home/yw174/program/pdb_sth/data'
 
 #where csv result files are
-result_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result'
+result_PREFIX = '/home/yw174/program/pdb_sth/result'
 
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"
@@ -54,11 +54,11 @@ fake_result_PREFIX = '/media/wy/data/result/'
 #name of fake pdb files
 fake_pdb_name = 'fake-ligand.pdb'
 # Where to store autodock mapping results
-autodock_store_dir = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result/'
+autodock_store_dir = '/home/yw174/program/pdb_sth/data/'
 
 # Location of pythonsh environment MGLTools provide (because its python 2.5 and use some abandoned characteristics)
 # We need this filelocation to convert PDB to PDBqt in a quick way.
-pythonsh_dir=  '/home/wy/Application/mgltools_x86_64Linux2_1.5.6/bin/'
+pythonsh_dir=  '/home/yw174/usr/mgltools/bin/'
 
 # All PDB_target
 # TODO Move this to another file
