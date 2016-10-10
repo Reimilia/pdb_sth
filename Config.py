@@ -19,23 +19,23 @@ result_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result'
 MUST = "PDB ID(s) for Ligand-Target Complex"
 
 #Thought to be the name, but not, its just some ID
-NAME = 'BindingDB Reactant_set_id'
+NAME = 'BindingDB MonomerID'
 
 
 # The keys need to be recorded
 key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
-experiment_part=['NAME',NAME,'Similarity']+key
+experiment_part=['NAME',NAME,'Chemical-Ligand Tanomito Similarity']+key
 electype= ['A','C','d','e','HD','N','NA','OA']
 
-PDB_part = ['Target PDB', 'PDBtype', 'PDB_ligand_name' , 'PDB_ligand_resIndex', 'Center of Vector', 'Rotation Degree(pi)', 'Autodock_vina_score (kcal/mol)','Resolution(A)', 'PDBSequence', 'Atom_Vector']
+PDB_part = ['Target PDB', 'PDBtype', 'PDB_ligand_name' , 'PDB_ligand_resIndex', 'Center of Vector', 'Rotation Degree(pi)', 'Autodockvina_affinity (kcal/mol)','Autodockvina_gauss1','Autodockvina_gauss2','Autodockvina_repulsion','Autodockvina_hydrophobic','Autodockvina_Hydrogen','Resolution(A)','Ligand-Protein Contact Similarity','Ligand RMSF ','PDBSequence', 'Atom_Vector']
 
 #Complete the column name
-#for i in range(8):
-#    PDB_part.append('protein_gridmaps_'+electype[i])
-#for i in range(8):
-#    PDB_part.append('ligand_gridmaps_'+electype[i])
-#for i in range(8):
-#    PDB_part.append('complex_gridmaps_'+electype[i])
+for i in range(8):
+    PDB_part.append('protein_gridmaps_'+electype[i])
+for i in range(8):
+    PDB_part.append('ligand_gridmaps_'+electype[i])
+for i in range(8):
+    PDB_part.append('complex_gridmaps_'+electype[i])
 
 # How many columns will the output csv files have
 Total_columns= len(experiment_part)+ len(PDB_part)

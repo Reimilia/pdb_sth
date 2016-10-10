@@ -117,8 +117,6 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
         logging.error('PDB {} with ligands sdf not found!'.format(src))
         return False
 
-    assert isinstance(key, list)
-
 
     # This variables are used for counting and statistic issue.
     active_count=0
@@ -137,11 +135,12 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
     # Since we use scripts so I just extract them to make sure that is what
     # we really want to compare
     # (But there should be a smarter way to do so)
-    o =open(fileforbabel, "w")
+
     try:
         mol = ''
         LINE_BEGIN=True
         Wait_Signal= 0
+        experimental_data = {}
         one_line=['']*len(experiment_part)
         #print 'here'
         for line in input_sdf:
@@ -156,6 +155,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
             if Wait_Signal>0:
                 if Wait_Signal==999:
                     one_line[1]=line.lstrip(' ').rstrip('\n')
+                    monomerID = one_line[1]
                 else:
                     one_line[2+Wait_Signal]= line.lstrip(' ').rstrip('\n')
                 Wait_Signal= 0
@@ -170,29 +170,47 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
 
             if '$$$$' in line:
                 #end of a molecule
-                o.write(mol)
-                o.close()
+                assert monomerID is not None
+                if monomerID not in experimental_data:
+                    fileforbabel = 'data/{}/{}_{}.sdf'.format(src,src,monomerID)
+                    o = open(fileforbabel, "w")
+                    o.write(mol)
+                    o.close()
+                    experimental_data[monomerID]=one_line
+                    one_line = [''] * len(experiment_part)
+                else:
+                    #combine experimental data together
+                    for i in range(len(key)):
+                        if experimental_data[monomerID][3+i]=='':
+                            experimental_data[monomerID][3 + i] = one_line[3+i]
+                        else:
+                            if len(one_line[3+i])>0:
+                                experimental_data[monomerID][3+i] += '|'+one_line[3+i]
 
 
-                # Find pairs with at least 85% similarity scores
-                ans_list =PDBindex.find_similar_target(fileforbabel)
 
-                count +=1
-                for eachone in ans_list:
-                    #Combine each part together
-                    one_line[2] = eachone['cp']
-                    # print one_line
-                    active_count += 1
-                    w.writerow(one_line + PDBindex.bundle_result(eachone['id']))
-
-
-                if len(ans_list) == 0:
-                    bad_one += 1
-                    logging.info('not found ligand here: {}_{}.'.format(src,one_line[1]))
 
                 mol = ''
                 LINE_BEGIN=False
-                o = open(fileforbabel, "w")
+                monomerID = None
+
+        for k,v in experimental_data.items():
+            #print k,v
+            fileforbabel  = 'data/{0}/{0}_{1}.sdf'.format(src,k)
+            # Find pairs with at least 85% similarity scores
+            ans_list = PDBindex.find_similar_target(fileforbabel)
+            #print 'here'
+            count += 1
+            for eachone in ans_list:
+                # Combine each part together
+                v[2] = eachone['cp']
+                # print one_line
+                active_count += 1
+                w.writerow(v + PDBindex.bundle_result(eachone['id']))
+
+            if len(ans_list) == 0:
+                bad_one += 1
+                logging.info('not found ligand here: {}_{}.'.format(src, one_line[1]))
 
     except:
         logging.error('Unknown error here!')
@@ -274,7 +292,7 @@ if __name__ == '__main__':
     for pdb in PDB_tar:
         #dirty way to do small scale tests
         #Use a count variable
-        if ct==10:
+        if ct==1:
             break
         pdb =pdb.lower()
         #real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
