@@ -24,37 +24,8 @@ from mapping import *
 #    if filename.split('.')[-1]=='pdb':
 #        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
 
-#a.self_generating()
+def quick_split(pdb):
+    pdb = pdb.lower()
+    fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
 
-'''
-P =0
-N =0
-C =0
-
-ct=0
-
-for pdb in PDB_tar:
-    pdb= pdb.lower()
-    A= pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'),OUT=False)
-    pdbtype= A.get_pdb_type()
-    if pdbtype=='Protein':
-        P+=1
-    if pdbtype=='Nucleic':
-        N+=1
-    if pdbtype=='Protein_Nucleic_Complex':
-        C+=1
-    ct+=1
-    print str(ct)+'/14388'
-
-print P
-print N
-print C
-'''
-
-#prepare_receptor('/home/wy/Documents/BCH_coding/pdb_data_extracter/1bib.pdb','1bib')
-#I= pdb_container('1bib',filepos='/home/wy/Documents/BCH_coding/pdb_data_extracter/result/1bib/1bib.pdb',OUT=True)
-
-#real_dir= os.path.join(pdb_PREFIX,'1bib.pdb.gz')
-#repair_pdbfile(real_dir,'1bib',OVERWRITE=True)
-
-#A= pdb_container('/media/wy/data/all/aa2ar/aa2ar_decoys_1_docked.pdb')
+quick_split('1avd')

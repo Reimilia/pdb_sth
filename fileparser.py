@@ -3,7 +3,7 @@ __author__ = 'wy'
 from prody import *
 import os
 import csv
-from vector_gen import pdb_container
+from vector_gen import pdb_container,fake_pdb_container
 import time
 from functools import wraps
 import logging
@@ -258,6 +258,11 @@ def initiate_report():
     w = csv.writer(writer)
     w.writerow(['filename','pdb Name','molecules','paired','bad_one','pairtimes'])
     return csv_name
+
+def quick_split(pdb):
+    pdb = pdb.lower()
+    fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
+
 
 if __name__ == '__main__':
 

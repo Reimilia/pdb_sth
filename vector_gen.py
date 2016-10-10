@@ -626,17 +626,26 @@ class fake_pdb_container:
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
             return
 
-        self.protein = parse.select('not water')
-        print self.protein.numAtoms()
+        if not os.path.exists('data/'+PDB):
+            os.mkdir('data/'+PDB)
+        writePDB('data/{0}/{0}.pdb'.format(PDB),parse)
 
-        # Generating sequence here
-        storage = []
-        for chain in parse.getHierView():
-            for seq in storage:
-                if chain.getSequence == seq:
-                    continue
-            self.sequence = self.sequence + repr(chain) + '|' + chain.getSequence()
-            storage.append(chain.getSequence())
+        hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
+
+        for pick_one in HierView(hetero).iterResidues():
+            # less than 3 atoms may be not ok
+            if pick_one.numAtoms() <= 3:
+                continue
+
+            ResId = str(pick_one.getResindex())
+
+            # Extract this ligand from protein (as input for openbabel)
+            filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
+
+            if not os.path.exists(filename):
+                writePDB(filename, pick_one)
+
+
 
 
     def self_generating(self):

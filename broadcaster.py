@@ -2,7 +2,7 @@ import sys
 import os
 import mpi4py.MPI as MPI
 import numpy as np
-from fileparser import do_one_pdb,initiate_report
+from fileparser import do_one_pdb,initiate_report,quick_split
 from Config import PDB_tar
 
 '''
@@ -47,4 +47,4 @@ if __name__ == '__main__':
 
 # Do seperately
 for file_name in local_files:
-    do_one_pdb(file_name,REPORTCSV=report_name,index=comm_rank)
+    quick_split(file_name,REPORTCSV=report_name,index=comm_rank)
