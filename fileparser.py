@@ -173,7 +173,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
                 assert monomerID is not None
                 if monomerID not in experimental_data:
                     fileforbabel = 'data/{}/{}_{}.sdf'.format(src,src,monomerID)
-                    o = open(fileforbabel, "w")
+                    o = open(fileforbabel, "a")
                     o.write(mol)
                     o.close()
                     experimental_data[monomerID]=one_line
@@ -204,7 +204,6 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
             for eachone in ans_list:
                 # Combine each part together
                 v[2] = eachone['cp']
-                # print one_line
                 active_count += 1
                 w.writerow(v + PDBindex.bundle_result(eachone['id']))
 
@@ -213,10 +212,14 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
                 logging.info('not found ligand here: {}_{}.'.format(src, one_line[1]))
 
     except:
+        raise TypeError
         logging.error('Unknown error here!')
         return False
     logging.warning('{} bad ligands found'.format(bad_one))
     logging.warning('{} molecules are detected, and {} pairs are recorded.'.format(count,active_count))
+
+    #Discard unused one
+    PDBindex.clean_temp_data()
 
     writer.flush()
     writer.close()
@@ -289,11 +292,9 @@ if __name__ == '__main__':
     ct=0
     report = initiate_report()
 
-    for pdb in PDB_tar:
+    for pdb in PDB_tar[0::300]:
         #dirty way to do small scale tests
         #Use a count variable
-        if ct==1:
-            break
         pdb =pdb.lower()
         #real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
 

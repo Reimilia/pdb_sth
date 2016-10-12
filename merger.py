@@ -24,7 +24,7 @@ def merge_the_result(filenames):
 
         for line in o:
             #First line
-            if line[0]=='Name':
+            if line[0]=='NAME':
                 if Never_OUTPUT:
                     out.writerow(line)
                     Never_OUTPUT= False

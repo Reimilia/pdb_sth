@@ -120,9 +120,15 @@ class pdb_container:
         if self.pure_nucleic is not None:
             return
         copy_pdbfile(filepos, 'data/{0}/{0}.pdb'.format(PDB), zipped=filepos.split('.')[-1] == 'gz')
+        repair_pdbfile('data/{0}/{0}.pdb'.format(PDB), PDB)
         #Generating sequence here
         #storage = []
         #split files by chain
+        try:
+            parse = parsePDB('data/{0}/{0}.pdb'.format(PDB))
+        except:
+            raise IOError('Cannot parse added H')
+
         self.chain_list= []
         for chain in parse.getHierView():
             #print chain
@@ -140,17 +146,22 @@ class pdb_container:
         #now try to fix the pdb from autodock tools
 
         hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
-        #other = parse.select('protein or nucleic')
+
+        other = parse.select('protein or nucleic')
 
         # print parse.numAtoms(), hetero.numAtoms(), other.numAtoms()
 
         # if OUT:
-        # Try to fix each chain
-        # writePDB('data/{0}/{0}_{1}_receptor.pdb'.format(PDB,chain), other)
-        # repair_pdbfile(os.getcwd() + '/data/{0}/{0}_{1}_receptor.pdb'.format(PDB,chain), PDB)
-
+        if other is not None:
+            writePDB('data/{0}/{0}_receptor.pdb'.format(PDB), other)
+            #repair_pdbfile('data/{0}/{0}_receptor.pdb'.format(PDB),PDB)
+        else:
+            return
         # Make vectors for every single hetero parts
         # Their values will be stored in a dict
+
+        #other = parsePDB('data/{0}/{0}_receptor.pdb'.format(PDB))
+
         for pick_one in HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
             if pick_one.numAtoms() <= 3:
@@ -200,6 +211,8 @@ class pdb_container:
                 # Try to move to the new center
                 middle = [(max(xyz[:, 0]) + min(xyz[:, 0])) / 2, (max(xyz[:, 1]) + min(xyz[:, 1])) / 2,
                           (max(xyz[:, 2]) + min(xyz[:, 2])) / 2]
+                middle = np.array(middle)
+                print middle
 
             # print middle
             xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
@@ -226,13 +239,13 @@ class pdb_container:
             defSelectionMacro('inbox',
                               'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
                                                                                             middle[2]))
-            other = parse.select('protein and same residue as within 18 of center', center=middle)
+            residues = other.select('protein and same residue as within 18 of center', center=middle)
 
             # This place might have some potential problem
             # for ADP or ATP , they might either be part of nucleic and the ligand
             # This will cause a severe bug when calculating autovina score
             # TODO fix this issue
-            nearby = other.select('inbox')
+            nearby = residues.select('inbox')
 
             if nearby is not None:
                 for atom in nearby.iterAtoms():
@@ -248,7 +261,7 @@ class pdb_container:
                         # Simply change here to fulfill the mark as 'C_2'
                         num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName() + '_' + str(PROTEIN_PART)
                     else:
-                        print atom.getName()
+                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] += '|'+atom.getName() + '_' + str(PROTEIN_PART)
                         logging.warning('Coorinate {} {} {} found at {}'.format(x_pos, y_pos, z_pos, self.PDBname))
 
 
@@ -276,7 +289,7 @@ class pdb_container:
                 'id': ResId,
                 'Resname': pick_one.getResname(),
                 'ligand': pick_one,
-                'protein' : other,
+                'protein' : residues,
                 'vina_score': 'NA',
                 'original_one': True,
                 'file_generated': False,
@@ -301,21 +314,23 @@ class pdb_container:
         # pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
         filename2 = 'data/{0}/{1}/{0}_{1}_complex.pdb'.format(PDB, ResId)
         writePDB(filename2, self.heterodict[ResId]['protein'] + self.heterodict[ResId]['ligand'])
-
         # Do autogrid mapgeneration:
         ligand_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' +ResId +'/' + naming + '_ligand.pdb')
         receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_receptor.pdb')
         complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_complex.pdb')
         fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
+        self.heterodict[ResId]['vina_score'] = 'NA'
+        self.heterodict[ResId]['gridmap_protein'] = 'NA'
+        self.heterodict[ResId]['gridmap_ligand'] = 'NA'
+        self.heterodict[ResId]['gridmap_complex'] = 'NA'
+
         try:
             self.heterodict[ResId]['vina_score']=do_auto_vina_score(receptor_filename, ligand_filename, middle)
             self.heterodict[ResId]['gridmap_protein'] = do_auto_grid(receptor_filename, fake_ligand_filename, center=middle)
             self.heterodict[ResId]['gridmap_ligand'] = do_auto_grid(ligand_filename, fake_ligand_filename, center=middle)
             self.heterodict[ResId]['gridmap_complex'] = do_auto_grid(complex_filename, fake_ligand_filename, center=middle)
-            self.clean_temp_data()
         except:
-            self.clean_temp_data()
             return
 
 
@@ -343,10 +358,11 @@ class pdb_container:
             try:
                 command = os.popen('babel -d {0}/{1} {0}/{2} -ofpt -xfFP4'.format(os.getcwd(),sdf_filedir,v['filename']))
                 ls= command.read()
-                #print ls
+                print ls
                 cp = re.split('=|\n', ls)[2]
-                print cp
+                print 'Similarity: {}'.format(cp)
             except:
+                raise TypeError
                 with open('error.txt','a') as f:
                     f.write(self.PDBname+'\n')
                 logging.warning('Babel encountered a problem at pdb {} ligand {}'.format(self.PDBname, v['filename']))
@@ -376,11 +392,39 @@ class pdb_container:
         for root, dirs, files in list_dirs:
             for f in files:
                 if f.split('.')[-1] not in exclude:
-                    if f!=self.PDBname+'.pdbqt':
                         os.remove(os.path.join(root,f))
                 if f.split('.')[-1] == 'map':
                     if f.split('.')[-2] not in electype:
                         os.remove(os.path.join(root, f))
+
+    def create_patch_file(self,ResId,dir='PDB'):
+        '''
+        Create the bundled result files in a nicer way.
+        :param ResId:
+        :param dir:
+        :return:
+        '''
+
+        def copyFiles(src, tar):
+            if not os.path.exists(tar) or \
+                    (os.path.exists(tar) and (os.path.getsize(tar) != os.path.getsize(tar))):
+                open(tar, "wb").write(open(src, "rb").read())
+
+        real_loc = os.path.join(dir,self.PDBname)
+
+        if not os.path.exists(real_loc):
+            os.mkdir(real_loc)
+
+        # Step 0: get original pdb file
+        filename = self.PDBname+'.pdb'
+        copyFiles('data/'+self.PDBname+'/'+filename,os.path.join(real_loc,filename))
+
+        # Setp 1: first get receptor's file
+        ligand_loc = os.path.join(real_loc,str(ResId))
+
+
+
+        pass
 
 
     def bundle_result(self,ResId):
@@ -396,6 +440,7 @@ class pdb_container:
         self.pdb_type = self.get_pdb_type()
 
         self.bundle_autodock_file(ResId)
+        #self.create_patch_file(ResId,dir='PDB')
 
         dict = self.heterodict[ResId]
         info_line.append(self.PDBname)
@@ -623,9 +668,6 @@ class pdb_container:
 
     def __repr__(self):
         print self.PDBname+'({} hetero parts found)'.format(len(self.heterodict.keys()))
-
-    def clean_temp_file(self):
-        pass
 
 
 

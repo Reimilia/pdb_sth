@@ -61,7 +61,7 @@ def pdb_to_mol2(src,tar):
     '''
 
     cmd = 'babel -ipdb {} -omol2 {} '.format(src, tar)
-    print cmd
+    #print cmd
     os.system(cmd)
     return True
 
@@ -111,7 +111,6 @@ def copy_pdbfile(filepos,tarpos,zipped=False):
             raise TypeError
 
 
-
 @fn_timer
 def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     '''
@@ -124,30 +123,31 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     real_filepos= os.path.join(real_dir,pdbname+'/'+pdbname+'.pdb')
 
 
-    os.chdir(CURRENT_DIR)
-    cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
-    #cmd ='obabel {} -opdb -O {} -h'.format(real_filepos,real_filepos)
+    #os.chdir(CURRENT_DIR)
+    #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
+    cmd ='babel -h {} {} '.format(filename,filename)
     stat ,out = commands.getstatusoutput(cmd)
     if stat == 256:
         print out
-        return 'NA'
+        return filename
 
-    cmd = os.path.join(pythonsh_dir, 'pythonsh') + ' pdbqt_to_pdb.py -f {0}qt -o {0}'.format(real_filepos)
+    #cmd = os.path.join(pythonsh_dir, 'pythonsh') + ' pdbqt_to_pdb.py -f {0}qt -o {0}'.format(real_filepos)
     # cmd ='obabel {} -opdb -O {} -h'.format(real_filepos,real_filepos)
-    stat, out = commands.getstatusoutput(cmd)
-    print stat, out
-    if stat == 256:
-        print out
-        return 'NA'
+    #stat, out = commands.getstatusoutput(cmd)
+    #print stat, out
+    #if stat == 256:
+    #    print out
+    #    return 'NA'
 
-    os.chdir(WORK_DIR)
+    #os.chdir(WORK_DIR)
 
     #print real_filepos
     #Convert into pdb files
     #os.system('cut -c-66 {} > {}'.format(real_filepos+'qt',real_filepos))
     #os.remove(real_filepos+'qt')
 
-    return os.path.join(os.getcwd(),real_filepos)
+    #return os.path.join(os.getcwd(),real_filepos)
+    return filename
 
 
 def prepare_receptor(filename,pdbname,pdbresid='',OVERWRITE=True,repair=False):
@@ -220,7 +220,7 @@ def do_auto_grid(receptor,ligand,center=None):
 
     #prepare receptor
     if rname.split('.')[-1]=='pdb':
-        if not prepare_receptor(receptor,pdbname,pdbresid,repair=True):
+        if not prepare_receptor(receptor,pdbname,pdbresid):
             return False
         rname+='qt'
     else:
@@ -355,7 +355,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
     if not os.path.exists(receptor) or not os.path.exists(ligand):
         return 'NA'
     if rname.split('.')[-1]=='pdb':
-        if not prepare_receptor(receptor,pdbname,pdbresid,repair=True):
+        if not prepare_receptor(receptor,pdbname,pdbresid):
             return 'NA'
         rname+='qt'
     else:
