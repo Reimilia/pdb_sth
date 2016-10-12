@@ -241,6 +241,8 @@ class pdb_container:
                                                                                             middle[2]))
             residues = other.select('protein and same residue as within 18 of center', center=middle)
 
+            if residues is None:
+                logging.warning('{} in {} has no atoms nearby'.format(ResId,PDB))
             # This place might have some potential problem
             # for ADP or ATP , they might either be part of nucleic and the ligand
             # This will cause a severe bug when calculating autovina score
@@ -358,11 +360,11 @@ class pdb_container:
             try:
                 command = os.popen('babel -d {0}/{1} {0}/{2} -ofpt -xfFP4'.format(os.getcwd(),sdf_filedir,v['filename']))
                 ls= command.read()
-                print ls
+                #print ls
                 cp = re.split('=|\n', ls)[2]
                 print 'Similarity: {}'.format(cp)
             except:
-                raise TypeError
+                #raise TypeError
                 with open('error.txt','a') as f:
                     f.write(self.PDBname+'\n')
                 logging.warning('Babel encountered a problem at pdb {} ligand {}'.format(self.PDBname, v['filename']))

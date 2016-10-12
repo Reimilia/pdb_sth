@@ -5,6 +5,6 @@ pythonsh_dir=  '/home/yw174/usr/mgltools/bin/'
 
 
 # Where to store autodock mapping results
-autodock_store_dir = '/home/yw174/program/pdb_sth/data/'
+autodock_store_dir = '/n/scratch2/yw174/structure_data/'
 
 

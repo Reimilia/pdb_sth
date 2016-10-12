@@ -10,10 +10,10 @@ filedir_PREFIX=  '/home/yw174/pdb_data/raw_data/'
 pdb_PREFIX = '/home/yw174/pdb_data/pdb_raw/'
 
 #where temporary pdb files are
-temp_pdb_PREFIX = '/home/yw174/program/pdb_sth/data'
+temp_pdb_PREFIX = '/n/scratch2/yw174/pdb_sth/data'
 
 #where csv result files are
-result_PREFIX = '/home/yw174/program/pdb_sth/result'
+result_PREFIX = '/n/scratch2/yw174/pdb_sth/result'
 
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"
@@ -43,6 +43,7 @@ Total_columns= len(experiment_part)+ len(PDB_part)
 # the name of the result after merge all things together
 merged_Filename = 'result.csv'
 
+#NTSYZ162
 #These four is used to support Xiao's code
 #where we store fake docing source pdb files
 #Suppose there should be
@@ -54,7 +55,7 @@ fake_result_PREFIX = '/media/wy/data/result/'
 #name of fake pdb files
 fake_pdb_name = 'fake-ligand.pdb'
 # Where to store autodock mapping results
-autodock_store_dir = '/home/yw174/program/pdb_sth/data/'
+autodock_store_dir = '/n/scratch2/yw174/pdb_sth/data/'
 
 # Location of pythonsh environment MGLTools provide (because its python 2.5 and use some abandoned characteristics)
 # We need this filelocation to convert PDB to PDBqt in a quick way.
