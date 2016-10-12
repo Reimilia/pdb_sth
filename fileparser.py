@@ -172,7 +172,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
                 #end of a molecule
                 assert monomerID is not None
                 if monomerID not in experimental_data:
-                    fileforbabel = 'data/{}/{}_{}.sdf'.format(src,src,monomerID)
+                    fileforbabel = temp_pdb_PREFIX+'/{}/{}_{}.sdf'.format(src,src,monomerID)
                     o = open(fileforbabel, "wb")
                     o.write(mol)
                     o.close()
@@ -196,7 +196,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
 
         for k,v in experimental_data.items():
             #print k,v
-            fileforbabel  = 'data/{0}/{0}_{1}.sdf'.format(src,k)
+            fileforbabel  = temp_pdb_PREFIX+'/{0}/{0}_{1}.sdf'.format(src,k)
             # Find pairs with at least 85% similarity scores
             ans_list = PDBindex.find_similar_target(fileforbabel)
             #print 'here'
@@ -292,7 +292,7 @@ if __name__ == '__main__':
     ct=0
     report = initiate_report()
 
-    for pdb in PDB_tar[2:100]:
+    for pdb in PDB_tar[0:100]:
         #dirty way to do small scale tests
         #Use a count variable
         pdb =pdb.lower()

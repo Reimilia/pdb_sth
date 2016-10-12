@@ -404,6 +404,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
 
     # find the score in result
     ls = command.read()
+    print ls
     for line in ls.split('\n'):
         if '#' in line:
             continue
