@@ -12,6 +12,8 @@ def merge_the_result(filenames):
     count = 0
     lines =0
 
+    f = open('report.txt', 'wb')
+
     # write legal files
     for filedir in sorted(filenames):
         print filedir
@@ -36,10 +38,14 @@ def merge_the_result(filenames):
 
         count+=1
         print 'Successfully merge {}'.format(filedir)
+        f.write('{} lines are valid in {}'.format(lines-1,filedir))
 
         csvfile.close()
 
     print '{} files and {} lines are merged into one called {}'.format(count,lines,merged_Filename)
+
+    f.write('{} files and {} lines are merged into one called {}'.format(count,lines,merged_Filename))
+    f.close()
     totalfile.close()
 
 if __name__=='__main__':
