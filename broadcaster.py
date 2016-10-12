@@ -47,4 +47,4 @@ if __name__ == '__main__':
 
 # Do seperately
 for file_name in local_files:
-    quick_split(file_name,REPORTCSV=report_name,index=comm_rank)
+    do_one_pdb(file_name,REPORTCSV=report_name,index=comm_rank)
