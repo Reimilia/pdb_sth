@@ -398,22 +398,26 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
     dict_key = ('Affinity','gauss 1','gauss 2','repulsion','hydrophobic','Hydrogen')
 
     Ans = {}
+    for k in Ans:
+        Ans[k]='NA'
     # find the score in result
     ls = command.read()
     print ls
-    for line in ls.split('\n'):
-        if '#' in line:
-            continue
-        for each in dict_key:
-            if each in line:
-                # find the real number in this line
-                real_num = re.compile(r"[-+]?\d+\.\d+")
-                score = real_num.search(line.split(':')[1])
-                if score:
-                    Ans[each]=float(score.group())
-                else:
-                    Ans[each]='NA'
-
+    try:
+        for line in ls.split('\n'):
+            if '#' in line:
+                continue
+            for each in dict_key:
+                if each in line:
+                    # find the real number in this line
+                    real_num = re.compile(r"[-+]?\d+\.\d+")
+                    score = real_num.search(line.split(':')[1])
+                    if score:
+                        Ans[each]=float(score.group())
+                    else:
+                        Ans[each]='NA'
+    except:
+        return Ans
     return Ans
 
 def vector_from_gridmap(mapfilename,BOX=21):

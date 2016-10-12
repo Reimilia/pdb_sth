@@ -292,7 +292,7 @@ if __name__ == '__main__':
     ct=0
     report = initiate_report()
 
-    for pdb in PDB_tar[0::300]:
+    for pdb in PDB_tar[2:100]:
         #dirty way to do small scale tests
         #Use a count variable
         pdb =pdb.lower()

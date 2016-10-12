@@ -358,11 +358,10 @@ class pdb_container:
             try:
                 command = os.popen('babel -d {0}/{1} {0}/{2} -ofpt -xfFP4'.format(os.getcwd(),sdf_filedir,v['filename']))
                 ls= command.read()
-                print ls
+                #print ls
                 cp = re.split('=|\n', ls)[2]
                 print 'Similarity: {}'.format(cp)
             except:
-                raise TypeError
                 with open('error.txt','a') as f:
                     f.write(self.PDBname+'\n')
                 logging.warning('Babel encountered a problem at pdb {} ligand {}'.format(self.PDBname, v['filename']))
