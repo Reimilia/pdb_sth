@@ -212,7 +212,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
                 logging.info('not found ligand here: {}_{}.'.format(src, one_line[1]))
 
     except:
-        raise TypeError
+        #raise TypeError
         logging.error('Unknown error here!')
         return False
     logging.warning('{} bad ligands found'.format(bad_one))

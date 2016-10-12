@@ -10,10 +10,10 @@ filedir_PREFIX=  '/home/yw174/pdb_data/raw_data/'
 pdb_PREFIX = '/home/yw174/pdb_data/pdb_raw/'
 
 #where temporary pdb files are
-temp_pdb_PREFIX = '/n/scratch2/yw174/pdb_sth/data'
+temp_pdb_PREFIX = '/n/scratch2/yw174/structure_data'
 
 #where csv result files are
-result_PREFIX = '/n/scratch2/yw174/pdb_sth/result'
+result_PREFIX = '/n/scratch2/yw174/result'
 
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"
@@ -55,7 +55,7 @@ fake_result_PREFIX = '/media/wy/data/result/'
 #name of fake pdb files
 fake_pdb_name = 'fake-ligand.pdb'
 # Where to store autodock mapping results
-autodock_store_dir = '/n/scratch2/yw174/pdb_sth/data/'
+autodock_store_dir = '/n/scratch2/yw174/structure_data/'
 
 # Location of pythonsh environment MGLTools provide (because its python 2.5 and use some abandoned characteristics)
 # We need this filelocation to convert PDB to PDBqt in a quick way.
