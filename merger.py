@@ -38,7 +38,7 @@ def merge_the_result(filenames):
 
         count+=1
         print 'Successfully merge {}'.format(filedir)
-        f.write('{} lines are valid in {}'.format(lines-1,filedir))
+        f.write('{} lines are valid in {}\n'.format(lines-1,filedir))
 
         csvfile.close()
 

@@ -23,9 +23,16 @@ from mapping import *
 #for filename in filenames:
 #    if filename.split('.')[-1]=='pdb':
 #        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
-
+'''
 def quick_split(pdb):
     pdb = pdb.lower()
     fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
 
 quick_split('1avd')
+'''
+a= []
+
+for pdb in PDB_tar:
+    a.append(pdb.lower())
+
+print a

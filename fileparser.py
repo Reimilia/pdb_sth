@@ -246,6 +246,10 @@ def do_one_pdb(pdb,filename=None,REPORTCSV=None,index=0):
     # For each pdb name , there should be one corresponding molecule files.
     # This will generate one result file.
     pdb = pdb.lower()
+
+    #if os.path.exists(os.path.join(temp_pdb_PREFIX,pdb)):
+    #    return
+
     if filename is None:
         filename = os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb))
     if os.path.exists(filename):
