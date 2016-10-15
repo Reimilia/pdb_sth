@@ -208,7 +208,7 @@ def prepare_ligand(filename,pdbname,pdbresid='',OVERWRITE=False):
     return True
 
 @fn_timer
-def do_auto_grid(receptor,ligand,center=None):
+def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_range=20):
     #extract names
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
@@ -249,14 +249,17 @@ def do_auto_grid(receptor,ligand,center=None):
     # prepare gpf files with customized parameters
     if center is None:
         cmd = os.path.join(pythonsh_dir, 'pythonsh') + \
-              ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" '.format(lloc,rloc,glg_output_dir)
+              ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing={} -p npts=\"{},{},{}\" '.format(lloc,
+                rloc,glg_output_dir,BOX_size,BOX_range,BOX_range,BOX_range)
         stat, out = commands.getstatusoutput(cmd)
         if stat == 256:
             os.chdir(WORK_DIR)
             return False
     else:
         cmd = os.path.join(pythonsh_dir,'pythonsh') + \
-                  ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" -p gridcenter=\"{},{},{}\" '.format(lloc,rloc ,glg_output_dir, center[0],center[1],center[2])
+                  ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing={} ' \
+                  '-p npts=\"{},{},{}\" -p gridcenter=\"{},{},{}\" '.format(lloc,
+                    rloc ,glg_output_dir, BOX_size,BOX_range,BOX_range,BOX_range,center[0],center[1],center[2])
         stat, out = commands.getstatusoutput(cmd)
         if stat == 256:
             os.chdir(WORK_DIR)
@@ -398,26 +401,26 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
     dict_key = ('Affinity','gauss 1','gauss 2','repulsion','hydrophobic','Hydrogen')
 
     Ans = {}
-    for k in Ans:
+
+    for k in dict_key:
         Ans[k]='NA'
+
     # find the score in result
     ls = command.read()
     print ls
-    try:
-        for line in ls.split('\n'):
-            if '#' in line:
-                continue
-            for each in dict_key:
-                if each in line:
-                    # find the real number in this line
-                    real_num = re.compile(r"[-+]?\d+\.\d+")
-                    score = real_num.search(line.split(':')[1])
-                    if score:
-                        Ans[each]=float(score.group())
-                    else:
-                        Ans[each]='NA'
-    except:
-        return Ans
+    for line in ls.split('\n'):
+        if '#' in line:
+            continue
+        for each in dict_key:
+            if each in line:
+                # find the real number in this line
+                real_num = re.compile(r"[-+]?\d+\.\d+")
+                score = real_num.search(line.split(':')[1])
+                if score:
+                    Ans[each]=float(score.group())
+                else:
+                    Ans[each]='NA'
+
     return Ans
 
 def vector_from_gridmap(mapfilename,BOX=21):
