@@ -5,10 +5,11 @@ url_prefix = 'https://files.rcsb.org/download/'
 
 #Sorry for the naming confusion, this is the location where the input sdf files (splitted with pdb name) are
 filedir_PREFIX=  '/home/yw174/pdb_data/raw_data/'
+#filedir_PREFIX = '/media/wy/data/raw_data/'
 
 #where pdb files or zip files are
 pdb_PREFIX = '/home/yw174/pdb_data/pdb_raw/'
-#pdb_PREFIX = '/media/wy/data/pdb_raw'
+#pdb_PREFIX = '/media/wy/data/pdb_raw/'
 
 #where temporary pdb files are
 temp_pdb_PREFIX = '/home/yw174/pdb_data/addHdata'
@@ -16,6 +17,7 @@ temp_pdb_PREFIX = '/home/yw174/pdb_data/addHdata'
 
 #where csv result files are
 result_PREFIX = '/n/scratch2/yw174/result'
+#result_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/result'
 
 #This is what we want to know, but not used in this program
 MUST = "PDB ID(s) for Ligand-Target Complex"

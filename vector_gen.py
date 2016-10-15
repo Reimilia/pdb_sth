@@ -82,6 +82,16 @@ class pdb_container:
         self.pure_nucleic= None
         self.pdb_filename = filepos.split('/')[-1]
 
+        if 'BOX' in kwargs:
+            self.BOX_range = kwargs['BOX']
+        else:
+            self.BOX_range = 20
+        if 'Size' in kwargs:
+            self.BOX_size = kwargs['Size']
+        else:
+            self.BOX_size = 1
+
+
         pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB)
 
         if not os.path.exists(pdb_store_dir):
@@ -199,32 +209,34 @@ class pdb_container:
                         max(xyz[:, 2]) - middle[2], middle[2] - min(xyz[:, 2]))
 
             # assert scale <= 10
-            if scale > 10:
+            if scale > self.BOX_range/2:
                 logging.warning(
                     'Warning! {} has a ligand out of box scale with {} atom distance to center'.format(PDB, scale))
                 # Now shifting the boxes:
                 max_scale = max(max(xyz[:, 0]) - min(xyz[:, 0]),
                                 max(xyz[:, 1]) - min(xyz[:, 1]),
                                 max(xyz[:, 2]) - min(xyz[:, 2]))
-                if max_scale > 20:
+                if max_scale > self.BOX_range:
                     logging.error(
                         'Assertion failed, {} has a ligand out of box completely with scale'.format(PDB, scale))
                     continue
                 # Try to move to the new center
                 middle = [(max(xyz[:, 0]) + min(xyz[:, 0])) / 2, (max(xyz[:, 1]) + min(xyz[:, 1])) / 2,
                           (max(xyz[:, 2]) + min(xyz[:, 2])) / 2]
-                middle = np.array(middle)
+                middle = round(middle,3)
                 print middle
 
             # print middle
-            xx, yy, zz = np.meshgrid(np.linspace(middle[0] - 9.5, middle[0] + 9.5, 20),
-                                     np.linspace(middle[1] - 9.5, middle[1] + 9.5, 20),
-                                     np.linspace(middle[2] - 9.5, middle[2] + 9.5, 20))
+            scale_extension =(self.BOX_range, self.BOX_size)/2
+            xx, yy, zz = np.meshgrid(np.linspace(middle[0] - scale_extension, middle[0] + scale_extension, self.BOX_range),
+                                     np.linspace(middle[1] - scale_extension, middle[1] + scale_extension, self.BOX_range),
+                                     np.linspace(middle[2] - scale_extension, middle[2] + scale_extension, self.BOX_range))
 
             # print xx
             vector = np.c_[xx.ravel(), yy.ravel(), zz.ravel()]
 
-            num_vector = [0] * 8000
+            num_vector = [0] * len(vector)
+            box_num = int(np.ceil(self.BOX_range/self.BOX_size))
             for atom in pick_one.iterAtoms():
                 x, y, z = atom.getCoords()
                 x_pos = int(round(x - vector[0][0]))
@@ -233,13 +245,13 @@ class pdb_container:
                 # assert 0 <= y_pos <= 19
                 z_pos = int(round(z - vector[0][2]))
                 # assert 0 <= z_pos <= 19
-                if 0 <= x_pos <= 19 and 0 <= y_pos <= 19 and 0 <= z_pos <= 19:
+                if 0 <= x_pos < box_num  and 0 <= y_pos < box_num and 0 <= z_pos < box_num:
                     # Simply change here to fulfill the mark as 'H_1'
-                    num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName() + '_' + str(HETERO_PART)
+                    num_vector[x_pos * box_num * box_num + y_pos * box_num + z_pos] = atom.getName() + '_' + str(HETERO_PART)
 
             # quick,dirty way to find atoms of protein in cubic boxes
             defSelectionMacro('inbox',
-                              'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
+                              'abs(x-{1}) <= {0} and abs(y-{2}) <= {0} and abs(z-{3}) <= {0}'.format(self.BOX_size/2,middle[0], middle[1],
                                                                                             middle[2]))
             residues = other.select('protein and same residue as within 18 of center', center=middle)
 
@@ -261,12 +273,14 @@ class pdb_container:
                     # assert 0 <= y_pos <= 19
                     z_pos = int(round(z - vector[0][2]))
                     # assert 0 <= z_pos <= 19
-                    if 0 <= x_pos <= 19 and 0 <= y_pos <= 19 and 0 <= z_pos <= 19 and num_vector[
-                                                x_pos * 400 + y_pos * 20 + z_pos] == 0:
+                    temp = x_pos * box_num *box_num + y_pos * box_num + z_pos
+                    if 0 <= x_pos < box_num and 0 <= y_pos < box_num and 0 <= z_pos < box_num and num_vector[
+                                                temp] == 0:
                         # Simply change here to fulfill the mark as 'C_2'
-                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName() + '_' + str(PROTEIN_PART)
+                        num_vector[temp] = atom.getName() + '_' + str(PROTEIN_PART)
                     else:
-                        num_vector[x_pos * 400 + y_pos * 20 + z_pos] += '|'+atom.getName() + '_' + str(PROTEIN_PART)
+                        #num_vector[temp] += '|'+atom.getName() + '_' + str(PROTEIN_PART)
+                        print atom.getName()
                         logging.warning('Coorinate {} {} {} found at {}'.format(x_pos, y_pos, z_pos, self.PDBname))
 
 

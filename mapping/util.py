@@ -208,7 +208,7 @@ def prepare_ligand(filename,pdbname,pdbresid='',OVERWRITE=False):
     return True
 
 @fn_timer
-def do_auto_grid(receptor,ligand,center=None):
+def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_range=20):
     #extract names
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
@@ -249,14 +249,17 @@ def do_auto_grid(receptor,ligand,center=None):
     # prepare gpf files with customized parameters
     if center is None:
         cmd = os.path.join(pythonsh_dir, 'pythonsh') + \
-              ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" '.format(lloc,rloc,glg_output_dir)
+              ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing={} -p npts=\"{},{},{}\" '.format(lloc,
+                rloc,glg_output_dir,BOX_size,BOX_range,BOX_range,BOX_range)
         stat, out = commands.getstatusoutput(cmd)
         if stat == 256:
             os.chdir(WORK_DIR)
             return False
     else:
         cmd = os.path.join(pythonsh_dir,'pythonsh') + \
-                  ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing=1.0 -p npts=\"20,20,20\" -p gridcenter=\"{},{},{}\" '.format(lloc,rloc ,glg_output_dir, center[0],center[1],center[2])
+                  ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing={} ' \
+                  '-p npts=\"{},{},{}\" -p gridcenter=\"{},{},{}\" '.format(lloc,
+                    rloc ,glg_output_dir, BOX_size,BOX_range,BOX_range,BOX_range,center[0],center[1],center[2])
         stat, out = commands.getstatusoutput(cmd)
         if stat == 256:
             os.chdir(WORK_DIR)

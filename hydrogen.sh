@@ -1,10 +1,10 @@
 #!/bin/bash
-#BSUB -n 4              #each  job run on 1 core
-#BSUB -W 5:00          #job run 10 hour
-#BSUB -J jobArray[1-14483] #job array list goes 1,2,3...1000
-#BSUB -o /home/yw174/job/out/%J.%I.out        #lsf output file
-#BSUB -e /home/yw174/job/err/%J.%I.err       #lsf error file
-#BSUB -q mcore         #submit to "short" queue
+#BSUB -n 2
+#BSUB -W 10:00
+#BSUB -J jobArray[2001-3000]
+#BSUB -o /home/yw174/job/out/%J.%I.out
+#BSUB -e /home/yw174/job/err/%J.%I.err
+#BSUB -q short
 export OMP_NUM_THREADS=1
 export PATH=$PATH:/home/yw174/usr/babel/bin/
 source /home/yw174/python_env/wy/bin/activate
