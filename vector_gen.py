@@ -5,6 +5,7 @@ import numpy as np
 import os,re
 import logging
 from mapping import *
+import collections
 
 '''
 Core part for generating vectors and split source pdb files with
@@ -113,7 +114,7 @@ class pdb_container:
                 filepos=PDB+'.pdb.gz'
         except:
             #raise IOError
-            print 'here'
+            #print 'here'
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
             return
         #Save resolution
@@ -294,11 +295,6 @@ class pdb_container:
             #complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_complex.pdb')
             #fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
-            for atom in pick_one:
-                print atom.getName()
-
-            # do_auto_dock(receptor_filename,ligand_filename,center=middle)
-
 
             self.heterodict[ResId] = {
                 'raw_vector': num_vector,
@@ -314,6 +310,8 @@ class pdb_container:
                 'vina_score': 'NA',
                 'original_one': True,
                 'file_generated': False,
+                'RMSF': 0,
+                'Contact Similarity': 1,
                 'gridmap_protein': 'NA',
                 'gridmap_ligand': 'NA',
                 'gridmap_complex': 'NA'
@@ -458,6 +456,35 @@ class pdb_container:
 
 
         pass
+
+    def bundle_result_dict(self,ResId):
+        '''
+        Render results into one_line string which contains docking score and some other infomation from pdb-ligand pair
+        :param ResId:
+        :return:p
+        '''
+        dict = self.heterodict[ResId]
+        Remark_dict = collections.OrderedDict()
+
+        Remark_dict['PDBname'] = self.PDBname
+        Remark_dict['PDBid'] = dict['id']
+        Remark_dict['center'] = list_formatter(dict['center'])
+        Remark_dict['rotation'] = list_formatter(dict['rotation'])
+        Remark_dict['Resolution(A)'] = self.resolution
+        Remark_dict['RMSF'] = dict['RMSF']
+        Remark_dict['Contact Similarity'] = dict['Contact Similarity']
+
+        try:
+            Remark_dict['Autovina_Affinity(kcal/mol)'] = dict['vina_score']['Affinity']
+            Remark_dict['Autovina_gauss1'] = dict['vina_score']['gauss 1']
+            Remark_dict['Autovina_gauss2'] = dict['vina_score']['gauss 2']
+            Remark_dict['Autovina_repulsion'] = dict['vina_score']['repulsion']
+            Remark_dict['Autovina_hydrophobic'] = dict['vina_score']['hydrophobic']
+            Remark_dict['Autovina_Hydrogen'] = dict['vina_score']['Hydrogen']
+        except:
+            return Remark_dict
+
+        return Remark_dict
 
 
     def bundle_result(self,ResId):
