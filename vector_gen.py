@@ -131,7 +131,7 @@ class pdb_container:
         # dirty way to throw away nucleic one
         if self.pure_nucleic is not None:
             return
-        copy_pdbfile(filepos, pdb_store_dir+'/{0}.pdb'.format(PDB), zipped=filepos.split('.')[-1] == 'gz')
+        copy_pdbfile(filepos, pdb_store_dir+'/{0}.pdb'.format(PDB))
         repair_pdbfile(pdb_store_dir+'/{0}.pdb'.format(PDB), PDB)
         #Generating sequence here
         #storage = []

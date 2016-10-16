@@ -300,9 +300,9 @@ if __name__ == '__main__':
         #dirty way to do small scale tests
         #Use a count variable
         pdb =pdb.lower()
-        #real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
+        real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb'.format(pdb)))
 
-        if do_one_pdb(pdb,REPORTCSV=report):
+        if do_one_pdb(pdb,filename=real_dir,REPORTCSV=report):
             DONE.append(pdb)
         else:
             FAIL.append(pdb)

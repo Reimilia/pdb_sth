@@ -13,10 +13,10 @@ to_dir = temp_pdb_PREFIX
 def add_hydrogens(filedir,pdbfilename,pdb):
     real_dir = os.path.join(filedir,pdbfilename)
 
-    '''cmd = 'babel -h {0} {0}'.format(real_dir)
-    os.system(cmd)
-    cmd = 'babel -d {0} {0}'.format(real_dir)
-    os.system(cmd)'''
+    #cmd = 'babel -h {0} {0}'.format(real_dir)
+    #os.system(cmd)
+    #cmd = 'babel -d {0} {0}'.format(real_dir)
+    #os.system(cmd)
 
     cmd = 'obminimize -cg -ff MMFF94 -h -n 500 {0}.pdb > {0}_hydro.pdb'.format(pdbfilename.split('.')[:-1])
     stat, out = commands.getstatusoutput(cmd)
@@ -32,17 +32,17 @@ def split_receptors(pdbname,src,tardir):
     try:
         parse= parsePDB(src)
     except:
-        return False
+        return 0
     print 'here'
 
     if parse.select('nucleic') is not None:
-        return False
+        return 1
     protein = parse.select('protein')
     if protein is None:
-        return False
+        return 2
 
 
-    return True
+    return 3
 
 def write_it(pdbname,src,tardir,index):
     parse = parsePDB(src)
@@ -55,17 +55,23 @@ def write_it(pdbname,src,tardir,index):
 if __name__=='__main__':
 
     A =[]
+    N =[]
+    P =[]
 
     for i in range(len(PDB_tar)):
         pdb=PDB_tar[i]
         flag= split_receptors(pdb,os.path.join(from_dir,pdb+'.pdb.gz'),to_dir)
-        if flag:
+        if flag==3:
             print pdb
             A.append(pdb)
             write_it(pdb,os.path.join(from_dir,pdb+'.pdb.gz'),to_dir,len(A))
-
-    print len(A)
+        if flag==2:
+            P.append(pdb)
+        if flag==1:
+            N.append(pdb)
 
     with open('source.py','w') as f:
-        f.write('PDB_protein_tar='+str(A))
+        f.write('PDB_protein_tar='+str(A)+'\n')
+        f.write('Nucleic_tar='+str(N)+'\n')
+        f.write('Unknown='+str(P)+'\n')
 
