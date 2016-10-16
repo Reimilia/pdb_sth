@@ -24,8 +24,14 @@ from mapping import *
 #    if filename.split('.')[-1]=='pdb':
 #        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
 
-def quick_split(pdb):
-    pdb = pdb.lower()
-    fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
+#def quick_split(pdb):
+#    pdb = pdb.lower()
+#    fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
 
-quick_split('1avd')
+#quick_split('1avd')
+
+A= pdb_container('1avd',filepos='data/1avd/1avd_hydro.pdb',BOX = 21, Size=0.35)
+hetero = A.pick_one('248')['ligand']
+
+for atom in hetero:
+    print atom.getName()

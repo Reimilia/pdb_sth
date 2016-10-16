@@ -227,16 +227,17 @@ class pdb_container:
                 print middle
 
             # print middle
-            scale_extension =(self.BOX_range, self.BOX_size)/2
-            xx, yy, zz = np.meshgrid(np.linspace(middle[0] - scale_extension, middle[0] + scale_extension, self.BOX_range),
-                                     np.linspace(middle[1] - scale_extension, middle[1] + scale_extension, self.BOX_range),
-                                     np.linspace(middle[2] - scale_extension, middle[2] + scale_extension, self.BOX_range))
+            scale_extension =(self.BOX_range-self.BOX_size)/2
+            box_num = int(np.ceil(self.BOX_range / self.BOX_size))
+            xx, yy, zz = np.meshgrid(np.linspace(middle[0] - scale_extension, middle[0] + scale_extension, box_num),
+                                     np.linspace(middle[1] - scale_extension, middle[1] + scale_extension, box_num),
+                                     np.linspace(middle[2] - scale_extension, middle[2] + scale_extension, box_num))
 
             # print xx
             vector = np.c_[xx.ravel(), yy.ravel(), zz.ravel()]
-
             num_vector = [0] * len(vector)
-            box_num = int(np.ceil(self.BOX_range/self.BOX_size))
+
+            print len(vector), box_num
             for atom in pick_one.iterAtoms():
                 x, y, z = atom.getCoords()
                 x_pos = int(round(x - vector[0][0]))
@@ -350,11 +351,17 @@ class pdb_container:
             self.heterodict[ResId]['gridmap_ligand'] = 'NA'
             self.heterodict[ResId]['gridmap_complex'] = 'NA'
             return
+
+        box_num = int(np.ceil(self.BOX_range / self.BOX_size))
+
         try:
             self.heterodict[ResId]['vina_score']=do_auto_vina_score(receptor_filename, ligand_filename, middle)
-            self.heterodict[ResId]['gridmap_protein'] = do_auto_grid(receptor_filename, fake_ligand_filename, center=middle)
-            self.heterodict[ResId]['gridmap_ligand'] = do_auto_grid(ligand_filename, fake_ligand_filename, center=middle)
-            self.heterodict[ResId]['gridmap_complex'] = do_auto_grid(complex_filename, fake_ligand_filename, center=middle)
+            self.heterodict[ResId]['gridmap_protein'] = do_auto_grid(receptor_filename, fake_ligand_filename,
+                                                                     center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
+            self.heterodict[ResId]['gridmap_ligand'] = do_auto_grid(ligand_filename, fake_ligand_filename,
+                                                                    center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
+            self.heterodict[ResId]['gridmap_complex'] = do_auto_grid(complex_filename, fake_ligand_filename,
+                                                                     center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
         except:
             return
 

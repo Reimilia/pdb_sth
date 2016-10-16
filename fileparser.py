@@ -126,7 +126,7 @@ def mol_ligand_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforb
     # Combine as pdb file address
     # We generate a class to store each ligands as a dict, and use a method
     # to find the similar ones by tanimoto comparing scores to specific input files
-    PDBindex= pdb_container(src,filepos=filepos)
+    PDBindex= pdb_container(src,filepos=filepos,BOX = 21, Size=0.35)
     if PDBindex.get_pdb_type()!='Protein':
         return False
     # In each time
@@ -292,13 +292,13 @@ if __name__ == '__main__':
     ct=0
     report = initiate_report()
 
-    for pdb in PDB_tar[2:100]:
+    for pdb in PDB_tar[0:1]:
         #dirty way to do small scale tests
         #Use a count variable
         pdb =pdb.lower()
         #real_dir = repair_pdbfile(os.path.join(pdb_PREFIX,'{}.pdb.gz'.format(pdb)),pdb)
 
-        if do_one_pdb(pdb,REPORTCSV=report):
+        if do_one_pdb(pdb,filename='data/1avd/1avd_hydro.pdb', REPORTCSV=report):
             DONE.append(pdb)
         else:
             FAIL.append(pdb)
