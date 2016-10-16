@@ -105,16 +105,17 @@ class pdb_container:
         # or use what we have
         # Using downloaded is better
         # parse header for first time
+
+
         try:
             if filepos is not None:
                 parse,header = parsePDB(filepos,header=True)
-
             else:
                 parse,header = parsePDB(PDB,header=True)
                 filepos=PDB+'.pdb.gz'
         except:
             #raise IOError
-            #print 'here'
+            print filepos
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
             return
         #Save resolution
@@ -133,6 +134,8 @@ class pdb_container:
         if self.pure_nucleic is not None:
             return
         copy_pdbfile(filepos, pdb_store_dir+'/{0}.pdb'.format(PDB), zipped=filepos.split('.')[-1] == 'gz')
+
+        #repair by guess, i think
         repair_pdbfile(pdb_store_dir+'/{0}.pdb'.format(PDB), PDB)
         #Generating sequence here
         #storage = []
@@ -180,6 +183,8 @@ class pdb_container:
             if pick_one.numAtoms() <= 3:
                 continue
 
+
+
             ResId = str(pick_one.getResindex())
 
             filename = pdb_store_dir+'/{1}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
@@ -222,9 +227,13 @@ class pdb_container:
                         'Assertion failed, {} has a ligand out of box completely with scale'.format(PDB, scale))
                     continue
                 # Try to move to the new center
-                middle = [(max(xyz[:, 0]) + min(xyz[:, 0])) / 2, (max(xyz[:, 1]) + min(xyz[:, 1])) / 2,
+                temp_mid = [(max(xyz[:, 0]) + min(xyz[:, 0])) / 2, (max(xyz[:, 1]) + min(xyz[:, 1])) / 2,
                           (max(xyz[:, 2]) + min(xyz[:, 2])) / 2]
-                middle = round(middle,3)
+
+                temp_mid[0] = round(temp_mid[0],6)
+                temp_mid[1] = round(temp_mid[1],6)
+                temp_mid[2] = round(temp_mid[2],6)
+                middle= np.array(temp_mid)
                 print middle
 
             # print middle
@@ -249,7 +258,8 @@ class pdb_container:
                 # assert 0 <= z_pos <= 19
                 if 0 <= x_pos < box_num  and 0 <= y_pos < box_num and 0 <= z_pos < box_num:
                     # Simply change here to fulfill the mark as 'H_1'
-                    num_vector[x_pos * box_num * box_num + y_pos * box_num + z_pos] = atom.getName() + '_' + str(HETERO_PART)
+                    # note (z(y(x))) follows from atuogrid map file format , otherwise the coordinate system is not correspond coorectly
+                    num_vector[z_pos * box_num * box_num + y_pos * box_num + x_pos] = atom.getName() + '_' + str(HETERO_PART)
 
             # quick,dirty way to find atoms of protein in cubic boxes
             defSelectionMacro('inbox',
@@ -275,7 +285,7 @@ class pdb_container:
                     # assert 0 <= y_pos <= 19
                     z_pos = int(round(z - vector[0][2]))
                     # assert 0 <= z_pos <= 19
-                    temp = x_pos * box_num *box_num + y_pos * box_num + z_pos
+                    temp = z_pos * box_num *box_num + y_pos * box_num + x_pos
                     if 0 <= x_pos < box_num and 0 <= y_pos < box_num and 0 <= z_pos < box_num and num_vector[
                                                 temp] == 0:
                         # Simply change here to fulfill the mark as 'C_2'
@@ -467,7 +477,7 @@ class pdb_container:
         Remark_dict = collections.OrderedDict()
 
         Remark_dict['PDBname'] = self.PDBname
-        Remark_dict['PDBid'] = dict['id']
+        Remark_dict['PDBResId'] = dict['id']
         Remark_dict['center'] = list_formatter(dict['center'])
         Remark_dict['rotation'] = list_formatter(dict['rotation'])
         Remark_dict['Resolution(A)'] = self.resolution
@@ -522,20 +532,23 @@ class pdb_container:
         info_line.append(list_formatter(dict['raw_vector']))
 
         if dict['gridmap_protein']!='NA':
-            for index in range(8):
-                info_line.append(self.PDBname+'_'+dict['id']+'_receptor.'+electype[index]+'.map')
+            #for index in range(8):
+            #    info_line.append(self.PDBname+'_'+dict['id']+'_receptor.'+electype[index]+'.map')
+            info_line += map(list_formatter,fetch_gridmaps(self.PDBname+'_'+dict['id']+'_receptor'))
         else:
             info_line+= ['NA']*8
 
         if dict['gridmap_ligand']!='NA':
-            for index in range(8):
-                info_line.append(self.PDBname+'_'+dict['id']+'_ligand.'+electype[index]+'.map')
+            #for index in range(8):
+            #    info_line.append(self.PDBname+'_'+dict['id']+'_ligand.'+electype[index]+'.map')
+            info_line += map(list_formatter,fetch_gridmaps(self.PDBname+'_'+dict['id']+'_receptor'))
         else:
             info_line+= ['NA']*8
 
         if dict['gridmap_complex']!='NA':
-            for index in range(8):
-                info_line.append(self.PDBname+'_'+dict['id']+'_complex.'+electype[index]+'.map')
+            #for index in range(8):
+            #    info_line.append(self.PDBname+'_'+dict['id']+'_complex.'+electype[index]+'.map')
+            info_line += map(list_formatter,fetch_gridmaps(self.PDBname+'_'+dict['id']+'_receptor'))
         else:
             info_line+= ['NA']*8
 
