@@ -144,7 +144,6 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
 
     try:
         mol = ''
-        LINE_BEGIN = True
         Wait_Signal = 0
         experimental_data = {}
         experiment_dict= {} # print 'here'
@@ -154,15 +153,13 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
 
             # just lazy
             if Wait_Signal > 0:
-                if 'monomerID' in 'Wait'    monomerID = one_line[1]
-                else:
-                    one_line[2 + Wait_Signal] = line.lstrip(' ').rstrip('\n')
+                experiment_dict[line_key]=line.lstrip(' ').rstrip(' ').rstrip('\n')
                 Wait_Signal = 0
 
             for i in range(len(key)):
                 if key[i] in line:
                     Wait_Signal = 1
-                    line_key = line
+                    line_key = key[i]
                     break
 
 
