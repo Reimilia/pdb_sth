@@ -7,6 +7,7 @@ from Config import *
 import os,sys,io
 import gzip
 from vector_gen import pdb_container,fake_pdb_container
+from prody import *
 from mapping import *
 
 
@@ -30,9 +31,26 @@ def quick_split(pdb):
 
 quick_split('1avd')
 '''
-a= []
+N=11549
 
-for pdb in PDB_tar:
-    a.append(pdb.lower())
+prefix = '/home/yw174/pdb_data/addHdata'
 
-print a
+os.remove('error.txt')
+
+Succ = 0
+Fail = 0
+
+for i in range(N):
+    try:
+        file = os.path.join(prefix, '{}_hydro.pdb'.format(i+1))
+        parsePDB(file)
+        print str(i+1) + ' is OK'
+        Succ+=1
+    except:
+        print str(i+1) + ' fails'
+        with open('error.txt','a') as w:
+            w.write(str(i+1)+'\n')
+        Fail+=1
+
+print 'Succ: {}, Fail: {}'.format(Succ,Fail)
+
