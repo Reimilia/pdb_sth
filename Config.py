@@ -23,7 +23,7 @@ NAME = 'BindingDB MonomerID'
 
 
 # The keys need to be recorded
-key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
+key= ['Link to Ligand in BindingDB','Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
 experiment_part=['NAME',NAME,'Chemical-Ligand Tanomito Similarity']+key
 electype= ['A','C','d','e','HD','N','NA','OA']
 

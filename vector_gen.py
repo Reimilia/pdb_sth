@@ -294,7 +294,8 @@ class pdb_container:
             #complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_complex.pdb')
             #fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
-
+            for atom in pick_one:
+                print atom.getName()
 
             # do_auto_dock(receptor_filename,ligand_filename,center=middle)
 
