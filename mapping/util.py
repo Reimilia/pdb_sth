@@ -95,9 +95,8 @@ def fn_timer(function):
 
     return function_timer
 
-def copy_pdbfile(filepos,tarpos):
+def copy_pdbfile(filepos,tarpos,zipped=False):
 
-    zipped = filepos.split('.')[-1]=='gz'
     if zipped:
         tool = GZipTool(BUFSIZE)
         try:
@@ -128,6 +127,7 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
     cmd ='babel -h {} {} '.format(filename,filename)
     stat ,out = commands.getstatusoutput(cmd)
+
     if stat == 256:
         print out
         return filename
@@ -209,7 +209,7 @@ def prepare_ligand(filename,pdbname,pdbresid='',OVERWRITE=False):
     return True
 
 @fn_timer
-def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_range=20):
+def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_num=21):
     #extract names
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
@@ -251,7 +251,7 @@ def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_range=20):
     if center is None:
         cmd = os.path.join(pythonsh_dir, 'pythonsh') + \
               ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing={} -p npts=\"{},{},{}\" '.format(lloc,
-                rloc,glg_output_dir,BOX_size,BOX_range,BOX_range,BOX_range)
+                rloc,glg_output_dir,BOX_size,BOX_num,BOX_num,BOX_num)
         stat, out = commands.getstatusoutput(cmd)
         if stat == 256:
             os.chdir(WORK_DIR)
@@ -260,7 +260,7 @@ def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_range=20):
         cmd = os.path.join(pythonsh_dir,'pythonsh') + \
                   ' prepare_gpf4.py -l {} -r {} -o {}.gpf -p spacing={} ' \
                   '-p npts=\"{},{},{}\" -p gridcenter=\"{},{},{}\" '.format(lloc,
-                    rloc ,glg_output_dir, BOX_size,BOX_range,BOX_range,BOX_range,center[0],center[1],center[2])
+                    rloc ,glg_output_dir, BOX_size,BOX_num,BOX_num,BOX_num,center[0],center[1],center[2])
         stat, out = commands.getstatusoutput(cmd)
         if stat == 256:
             os.chdir(WORK_DIR)
@@ -453,7 +453,7 @@ def fetch_gridmaps(map_prefix ,BOX=21):
     vectors= []
     try:
         for each in type:
-            real_dir= os.path.join(autodock_store_dir,map_prefix.split('_')[0])
+            real_dir = os.path.join(os.path.join(autodock_store_dir, map_prefix.split('_')[0]), map_prefix.split('_')[1])
             real_pos= os.path.join(real_dir,map_prefix+'.'+each+'.map')
             vectors.append(vector_from_gridmap(real_pos,BOX=BOX))
         return vectors
