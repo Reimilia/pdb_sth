@@ -255,13 +255,13 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
 
     # Wipe the pdb temporary files if you wish:
     if CLEAN:
-        files = os.listdir(temp_pdb_PREFIX)
+        files = os.listdir(os.path.join(temp_pdb_PREFIX,src))
         for filename in files:
-            if filename == 'fake-ligand.pdb':
-                continue
-            loc = os.path.join(temp_pdb_PREFIX, filename)
+            #if filename == 'fake-ligand.pdb':
+            #    continue
+            loc = os.path.join(os.path.join(temp_pdb_PREFIX,src), filename)
             if os.path.exists(loc):
-                os.system('rm -r ' + os.path.join(os.getcwd(), loc))
+                os.system('rm -r ' + loc)
 
     return True
 
@@ -271,4 +271,5 @@ if __name__ == '__main__':
     for pdb in PDB_tar[0:1]:
         pdb=pdb.lower()
         filepath= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
+        print filepath
         bindingDB_pdb_tar_generator(pdb,filepath,statistic_csv='report.csv',CLEAN=False)

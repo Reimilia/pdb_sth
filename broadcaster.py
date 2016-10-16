@@ -2,8 +2,9 @@ import sys
 import os
 import mpi4py.MPI as MPI
 import numpy as np
+from main import bindingDB_pdb_tar_generator
 from fileparser import do_one_pdb,initiate_report,quick_split
-from Config import PDB_tar
+from Config import PDB_tar,pdb_PREFIX
 
 '''
     This program use MPI to fulfill multiprocessing need with a dirty way.
@@ -47,4 +48,6 @@ if __name__ == '__main__':
 
 # Do seperately
 for file_name in local_files:
-    do_one_pdb(file_name,REPORTCSV=report_name,index=comm_rank)
+    file_name = file_name.lower()
+    filepath = os.path.join(pdb_PREFIX, file_name + '.pdb.gz')
+    bindingDB_pdb_tar_generator(file_name, filepath, statistic_csv='report.csv', CLEAN=True)

@@ -12,7 +12,7 @@ pdb_PREFIX = '/home/yw174/pdb_data/pdb_raw/'
 #pdb_PREFIX = '/media/wy/data/pdb_raw/'
 
 #where temporary pdb files are
-temp_pdb_PREFIX = '/home/yw174/pdb_data/addHdata'
+temp_pdb_PREFIX = '/n/scratch2/yw174/structure_data'
 #temp_pdb_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/data'
 
 #where csv result files are
@@ -24,6 +24,9 @@ MUST = "PDB ID(s) for Ligand-Target Complex"
 
 #Thought to be the name, but not, its just some ID
 NAME = 'BindingDB MonomerID'
+
+#Where is the fast docking result
+fast_dock_PREFIX = '/n/scratch2/xl198/data/H/fast'
 
 
 # The keys need to be recorded
