@@ -127,6 +127,7 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
     cmd ='babel -h {} {} '.format(filename,filename)
     stat ,out = commands.getstatusoutput(cmd)
+
     if stat == 256:
         print out
         return filename
@@ -452,7 +453,7 @@ def fetch_gridmaps(map_prefix ,BOX=21):
     vectors= []
     try:
         for each in type:
-            real_dir= os.path.join(autodock_store_dir,map_prefix.split('_')[0])
+            real_dir = os.path.join(os.path.join(autodock_store_dir, map_prefix.split('_')[0]), map_prefix.split('_')[1])
             real_pos= os.path.join(real_dir,map_prefix+'.'+each+'.map')
             vectors.append(vector_from_gridmap(real_pos,BOX=BOX))
         return vectors

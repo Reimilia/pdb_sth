@@ -56,13 +56,25 @@ def bundle_result_mol2_file(source_mol_file ,experimentaldict, pdbdict):
     filename = source_mol_file.split('/')[-1]
 
     real_dir= os.path.join(result_PREFIX,filename)
-    #print real_dir
 
     # first deal with experimental data
     comment = 'Remark: '
     if experimentaldict is not None:
+        #print experimentaldict
         for k,v in experimentaldict.items():
-            comment = comment + '*@*'+ k + ':'+ str(v)
+            k_bundle= ''
+            assert isinstance(v,list)
+            #print k,v
+            for item in list(set(v)):
+                #print item
+                if len(k_bundle)==0:
+                    k_bundle+=str(item)
+                else:
+                    k_bundle+='|'+str(item)
+
+            #print k_bundle
+
+            comment = comment + '*@*'+ k + ':'+ k_bundle
     #print pdbdict
     if pdbdict is not None:
         for k,v in pdbdict.items():
@@ -79,8 +91,6 @@ def bundle_result_mol2_file(source_mol_file ,experimentaldict, pdbdict):
 
 
 
-
-
 @fn_timer
 def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,fileforbabel='a.sdf'):
     '''
@@ -91,7 +101,6 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
     :return: True: If everything works fine
              False: Unexpected error happens. Note if there is no reuslt, it will return True because everything runs fine.
     '''
-
 
     # write the result
 
@@ -125,6 +134,11 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
     count = 0
     bad_one = 0
 
+    # csv writer
+    writer = file(filedir, 'w')
+    w = csv.writer(writer)
+    w.writerow(experiment_part + PDB_part)
+
     # Combine as pdb file address
     # We generate a class to store each ligands as a dict, and use a method
     # to find the similar ones by tanimoto comparing scores to specific input files
@@ -144,21 +158,25 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
     Comment= {}
     for Id in PDBindex.list_ResId():
         Comment[Id]=collections.OrderedDict()
-        for k in key:
-            Comment[Id][k]=''
+        for k in experiment_part:
+            Comment[Id][k]=[]
     #print  Comment
     try:
         mol = ''
         Wait_Signal = 0
-        experimental_data = {}
+        FIRST_LINE = False
         experiment_dict= {} # print 'here'
         for line in input_sdf:
             mol += line
 
+            if FIRST_LINE==False:
+                x = line.lstrip(' ').rstrip('\n').rstrip(' ')
+                experiment_dict['NAME']=x
+                FIRST_LINE= True
 
             # just lazy
             if Wait_Signal > 0:
-                experiment_dict[line_key]=line.lstrip(' ').rstrip(' ').rstrip('\n')
+                experiment_dict[line_key]=line.lstrip(' ').rstrip('\n').rstrip(' ')
                 Wait_Signal = 0
 
             for i in range(len(key)):
@@ -187,13 +205,14 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
                     for k,v in experiment_dict.items():
                         vv= v.lstrip(' ').rstrip(' ')
                         #print k,vv
-                        if len(Comment[Id][k])==0:
-                            Comment[Id][k]+=vv
-                        else:
-                            if k!='Link to Ligand in BindingDB' and len(vv)>0:
-                                Comment[Id][k]+='|'+vv
+                        if len(vv)>0:
+                            Comment[Id][k].append(vv)
 
                 mol = ''
+                FIRST_LINE=False
+                experiment_dict={}
+
+
 
         for k in PDBindex.list_ResId():
             # print k,v
@@ -201,6 +220,20 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
             assert 'file_generated' in ligand_dict
             if ligand_dict['file_generated']==True:
                 bundle_result_mol2_file(ligand_dict['filename'][:-4]+'.mol',Comment[k],PDBindex.bundle_result_dict(k))
+                #generate one_line in csv files
+                one_line= [''] * len(experiment_part)
+                i= 0
+                for kk,v in Comment[k].items():
+                    k_bundle= ''
+                    assert isinstance(v,list)
+                    for item in list(set(v)):
+                        if len(k_bundle)==0:
+                            k_bundle+=str(item)
+                        else:
+                            k_bundle+='|'+str(item)
+                    one_line[i]= k_bundle
+                    i+=1
+                w.writerow(one_line+PDBindex.bundle_result(k))
 
     except:
         #raise TypeError
@@ -233,7 +266,9 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
     return True
 
 if __name__ == '__main__':
-    for pdb in PDB_tar[::300]:
-        pdb =pdb.lower()
+
+
+    for pdb in PDB_tar[0:1]:
+        pdb=pdb.lower()
         filepath= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
-        bindingDB_pdb_tar_generator(pdb,filepath,statistic_csv='report.csv',CLEAN=True)
+        bindingDB_pdb_tar_generator(pdb,filepath,statistic_csv='report.csv',CLEAN=False)
