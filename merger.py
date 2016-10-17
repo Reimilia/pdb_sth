@@ -51,4 +51,9 @@ def merge_the_result(filenames):
 if __name__=='__main__':
 
     filenames= os.listdir(result_PREFIX)
-    merge_the_result(filenames)
+
+    result_filename = []
+    for filename in filenames:
+        if 'filter' in filename:
+            result_filename.append(filename)
+    merge_the_result(result_filename)
