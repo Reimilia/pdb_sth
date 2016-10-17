@@ -187,7 +187,7 @@ class pdb_container:
 
 
 
-    def bundle_ligand_data(self,pick_one,fake_ligand=True,OUT=True,compare_ResId_native='default',Id_prefix='default'):
+    def bundle_ligand_data(self,pick_one,fake_ligand=True,OUT=True,compare_ResId_native='default',Id_suffix='default',filename=None):
         '''
 
         :param pick_one:
@@ -198,14 +198,14 @@ class pdb_container:
         if fake_ligand==False:
             ResId = str(pick_one.getResindex())
         else:
-            print 'Answer'
-            ResId = str(Id_prefix)+'_' + compare_ResId_native
+            ResId = compare_ResId_native + '_' + str(Id_suffix)
 
         print ResId
         pdb_store_dir = os.path.join(temp_pdb_PREFIX, PDB)
         other = self.receptor
 
-        filename = pdb_store_dir + '/{1}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
+        if filename is None:
+            filename = pdb_store_dir + '/{1}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
 
         # Extract this ligand from protein (as input for openbabel)
         if not os.path.isfile(filename):
@@ -599,7 +599,8 @@ class pdb_container:
             logging.warning('cannot add ligang file on PDB {}'.format(self.PDBname))
             return
 
-        self.bundle_ligand_data(parse,fake_ligand=True,OUT=OUT,compare_ResId_native=ResIndex,Id_predix=str(count_index))
+        self.bundle_ligand_data(parse,fake_ligand=True,OUT=OUT,compare_ResId_native=ResIndex,
+                                Id_suffix=str(count_index),filename=ligand_pdb_file)
 
 
 
@@ -617,7 +618,7 @@ class pdb_container:
                 output=''
                 index=0
                 for line in f.readlines():
-                    output+=line
+                    output += line
                     if 'ENDMDL' in line:
                         if suffix is not None:
                             filename = "".join(filename.split('.')[:-1])
