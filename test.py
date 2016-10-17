@@ -30,8 +30,5 @@ from mapping import *
 
 #quick_split('1avd')
 
-A= pdb_container('1avd',filepos='data/1avd/1avd_hydro.pdb',BOX = 21, Size=0.35)
-hetero = A.pick_one('248')['ligand']
-
-for atom in hetero:
-    print atom.getName()
+A = pdb_container('1avd',filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
+A.add_ligands('/media/wy/data/fast/1avd/1avd_248_ligand.pdb',suffix='fast')
