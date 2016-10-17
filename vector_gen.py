@@ -194,10 +194,11 @@ class pdb_container:
         :return:
         '''
         PDB = self.PDBname
-
+        print 'here'
         if fake_ligand==False:
             ResId = str(pick_one.getResindex())
         else:
+            print 'Answer'
             ResId = str(Id_prefix)+'_' + compare_ResId_native
 
         print ResId
