@@ -15,6 +15,8 @@ N=11549
 
 prefix = '/home/yw174/pdb_data/addHdata'
 
+
+
 os.remove('error.txt')
 
 Succ = 0

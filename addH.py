@@ -10,7 +10,7 @@ from_dir = pdb_PREFIX
 to_dir = temp_pdb_PREFIX
 
 
-def add_hydrogens(filedir,pdbfilename,pdb):
+def add_hydrogens(filedir,pdbfilename,index):
     real_dir = os.path.join(filedir,pdbfilename)
 
     #cmd = 'babel -h {0} {0}'.format(real_dir)
@@ -18,14 +18,19 @@ def add_hydrogens(filedir,pdbfilename,pdb):
     #cmd = 'babel -d {0} {0}'.format(real_dir)
     #os.system(cmd)
 
-    cmd = 'obminimize -cg -ff MMFF94 -h -n 500 {0}.pdb > {0}_hydro.pdb'.format(pdbfilename.split('.')[:-1])
-    stat, out = commands.getstatusoutput(cmd)
-    # If anything goes wrong , return False
-    if stat == 256:
-        print out
-        return False
-
-    return True
+    with open('repair.sh','w') as w:
+        w.write('# !/bin/bash\n')
+        w.write('# BSUB -n 2\n')
+        w.write('# BSUB -W 100:00\n')
+        w.write('# BSUB -J reapir_{}\n'.format(index))
+        w.write('# BSUB -o /home/yw174/job/addH/{}.out\n'.format(index))
+        w.write('# BSUB -e /home/yw174/job/addH/{}.err\n'.format(index))
+        w.write('# BSUB -q long\n')
+        w.write('export PATH =$PATH:/home/yw174/usr/babel/bin/\n')
+        w.write('cd /home/yw174/program/pdb_sth\n')
+        cmd = 'obminimize -cg -ff MMFF94 -h -n 500 {0}.pdb > {0}_hydro.pdb'.format(index)
+        w.write(cmd+'\n')
+    os.system('bsub < repair.sh')
 
 def split_receptors(pdbname,src,tardir):
     print src
@@ -54,24 +59,26 @@ def write_it(pdbname,src,tardir,index):
 
 if __name__=='__main__':
 
-    A =[]
-    N =[]
-    P =[]
+    N = 11549
 
-    for i in range(len(PDB_tar)):
-        pdb=PDB_tar[i]
-        flag= split_receptors(pdb,os.path.join(from_dir,pdb+'.pdb.gz'),to_dir)
-        if flag==3:
-            print pdb
-            A.append(pdb)
-            write_it(pdb,os.path.join(from_dir,pdb+'.pdb.gz'),to_dir,len(A))
-        if flag==2:
-            P.append(pdb)
-        if flag==1:
-            N.append(pdb)
+    prefix = '/home/yw174/pdb_data/addHdata'
+    os.remove('error.txt')
 
-    with open('source.py','w') as f:
-        f.write('PDB_protein_tar='+str(A)+'\n')
-        f.write('Nucleic_tar='+str(N)+'\n')
-        f.write('Unknown='+str(P)+'\n')
+    Succ = 0
+    Fail = 0
+
+    for i in range(N):
+        try:
+            file = os.path.join(prefix, '{}_hydro.pdb'.format(i + 1))
+            parsePDB(file)
+            print str(i + 1) + ' is OK'
+            Succ += 1
+        except:
+            print str(i + 1) + ' fails' +' ,try to move long queue'
+            add_hydrogens(prefix,str(i+1)+'.pdb', str(i+1))
+            with open('error.txt', 'a') as w:
+                w.write(str(i + 1) + '\n')
+            Fail += 1
+
+    print 'Succ: {}, Fail: {}'.format(Succ, Fail)
 
