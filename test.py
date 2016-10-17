@@ -10,7 +10,7 @@ from vector_gen import pdb_container,fake_pdb_container
 from prody import *
 from mapping import *
 
-'''
+
 N=11549
 
 prefix = '/home/yw174/pdb_data/addHdata'
@@ -40,3 +40,4 @@ A= pdb_container('1avd',filepos='media/wy/data/pdb_raw/1avd.pdb.gz')
 
 filename= 'media/wy/data/fast/1avd/1avd_248_ligand.pdb'
 A.add_ligands(filename,'fast')
+'''
