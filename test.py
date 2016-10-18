@@ -31,4 +31,4 @@ from mapping import *
 #quick_split('1avd')
 
 A = pdb_container('1avd',filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
-A.add_ligands('/media/wy/data/fast/1avd/1avd_247_ligand.pdb',suffix='fast')
+A.add_ligands('/media/wy/data/fast/1avd/1avd_248_ligand.pdb',suffix='fast')

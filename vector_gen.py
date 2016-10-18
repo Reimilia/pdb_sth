@@ -353,7 +353,7 @@ class pdb_container:
         if fake_ligand== True:
             try:
                 dist =self._calcRMSF(self.heterodict[compare_ResId_native]['ligand'],pick_one)
-                print dist
+                #print dist
                 self.heterodict[ResId]['RMSF'] = dist
             except:
                 print 'oops'
@@ -366,8 +366,20 @@ class pdb_container:
     def _calcRMSF(self,src,tar):
         #TODO finish this stuff
         if src.numAtoms()!=tar.numAtoms():
-            print
-
+            print 'Can\'t tell RMSF because number of Atoms are not same here!'
+            return -1
+        src_ag= AtomGroup(src)
+        tar_ag= AtomGroup(tar)
+        try:
+            src_ag.addCoordset(tar_ag.getCoordsets())
+        except:
+            print 'lalala'
+        print 'ready to calculate'
+        try:
+            sth = calcRMSF(src_ag)
+        except:
+            print 'hahaha'
+        print sth
         return 0
 
     def calcQ(self,ligand):
