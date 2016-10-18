@@ -97,6 +97,7 @@ def fn_timer(function):
 
 def copy_pdbfile(filepos,tarpos,zipped=False):
 
+    zipped = (filepos.split('.')[-1]=='gz')
     if zipped:
         tool = GZipTool(BUFSIZE)
         try:
