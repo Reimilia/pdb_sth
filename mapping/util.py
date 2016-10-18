@@ -52,15 +52,17 @@ class GZipTool:
         self.fin.close()
         self.fout.close()
 
-def pdb_to_mol2(src,tar):
+def pdb_to_mol2(src,tar, addH=False):
     '''
     convert pdb ligands into mol2 files
     :param src:
     :param tar:
     :return:
     '''
-
-    cmd = 'babel -ipdb {} -omol2 {} '.format(src, tar)
+    if addH==True:
+        cmd = 'babel -h -ipdb {} -omol2 {} '.format(src, tar)
+    else:
+        cmd = 'babel -ipdb {} -omol2 {} '.format(src, tar)
     #print cmd
     os.system(cmd)
     return True

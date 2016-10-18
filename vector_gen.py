@@ -231,6 +231,8 @@ class pdb_container:
                     max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
                     max(xyz[:, 2]) - middle[2], middle[2] - min(xyz[:, 2]))
 
+
+
         # assert scale <= 10
         if scale > self.BOX_range / 2:
             logging.warning(
@@ -285,9 +287,13 @@ class pdb_container:
                                                                                                  middle[2]))
         residues = other.select('protein and same residue as within 18 of center', center=middle)
 
+
+
         if residues is None:
             logging.warning('{} in {} has no atoms nearby'.format(ResId, PDB))
             return
+
+
         # This place might have some potential problem
         # for ADP or ATP , they might either be part of nucleic and the ligand
         # This will cause a severe bug when calculating autovina score
@@ -322,16 +328,15 @@ class pdb_container:
         # complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + naming + '_complex.pdb')
         # fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
-
         self.heterodict[ResId] = {
             'raw_vector': num_vector,
             'center': middle,
             'rotation': rotation,
             'naming': '{}_{}'.format(PDB, ResId),
-            'chain': pick_one.getChid(),
+            'chain': 'NA',
             'filename': filename,
             'id': ResId,
-            'Resname': pick_one.getResname(),
+            'Resname': 'NA',
             'ligand': pick_one,
             'protein': residues,
             'vina_score': 'NA',
@@ -344,16 +349,26 @@ class pdb_container:
             'gridmap_ligand': 'NA',
             'gridmap_complex': 'NA'
         }
-
+        print 'test'
         if fake_ligand== True:
             try:
-                dist =calcRMSF(self.heterodict[compare_ResId_native].getCoordsets()+pick_one.getCoordsets())
+                dist =self._calcRMSF(self.heterodict[compare_ResId_native]['ligand'],pick_one)
                 print dist
+                self.heterodict[ResId]['RMSF'] = dist
             except:
+                print 'oops'
                 raise IOError
             self.heterodict[ResId]['Contact Similarity']= self.calcQ(pick_one)
+        else:
+            self.heterodict[ResId]['Resname']= pick_one.getResname()
+            self.heterodict[ResId]['chain'] = pick_one.getChid()
 
+    def _calcRMSF(self,src,tar):
+        #TODO finish this stuff
+        if src.numAtoms()!=tar.numAtoms():
+            print
 
+        return 0
 
     def calcQ(self,ligand):
         #TODO finish this stuff
@@ -612,8 +627,8 @@ class pdb_container:
         '''
 
         try:
-            filename = ligand_file.split('/')[-1]
-            residue_index = filename.split('_')[1]
+            fixfilename = ligand_file.split('/')[-1]
+            residue_index = fixfilename.split('_')[1]
             with open(ligand_file,'rb') as f:
                 output=''
                 index=0
@@ -621,16 +636,17 @@ class pdb_container:
                     output += line
                     if 'ENDMDL' in line:
                         if suffix is not None:
-                            filename = "".join(filename.split('.')[:-1])
+                            filename = "".join(fixfilename.split('.')[:-1])
                             filename = filename + "_" + suffix + "_" + str(index) + ".pdb"
                         else:
-                            filename = "".join(filename.split('.')[:-1])
+                            filename = "".join(fixfilename.split('.')[:-1])
                             filename = filename + "_" + str(index) + ".pdb"
 
                         real_dir =os.path.join(temp_pdb_PREFIX,self.PDBname+'/'+residue_index+'/'+filename)
 
                         with open(real_dir,'wb') as w:
                             w.write(output)
+                        os.system('babel -h -ipdb {0} -opdb  {0}'.format(real_dir))
                         self.add_ligand(real_dir, residue_index, index)
                         output = ''
                         index+=1
