@@ -499,6 +499,7 @@ class pdb_container:
         :return:p
         '''
         dict = self.heterodict[ResId]
+        self.bundle_autodock_file(ResId,score_only=True)
         Remark_dict = collections.OrderedDict()
 
         Remark_dict['PDBname'] = self.PDBname

@@ -219,6 +219,7 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
             ligand_dict= PDBindex.heterodict[k]
             assert 'file_generated' in ligand_dict
             if ligand_dict['file_generated']==True:
+                w.writerow(one_line + PDBindex.bundle_result(k))
                 bundle_result_mol2_file(ligand_dict['filename'][:-4]+'.mol',Comment[k],PDBindex.bundle_result_dict(k))
                 #generate one_line in csv files
                 one_line= [''] * len(experiment_part)
@@ -233,7 +234,7 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
                             k_bundle+='|'+str(item)
                     one_line[i]= k_bundle
                     i+=1
-                w.writerow(one_line+PDBindex.bundle_result(k))
+
 
     except:
         #raise TypeError
