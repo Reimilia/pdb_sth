@@ -5,6 +5,7 @@ import numpy as np
 import os,re
 import logging
 from mapping import *
+from native_contact import native_contact
 import collections
 
 '''
@@ -151,13 +152,9 @@ class pdb_container:
             #for seq in storage:
             #    if chain.getSequence()==seq:
             #        continue
-            #  writePDB('data/{0}/{0}_{1}.pdb'.format(PDB,chain.getChid()),chain)
             self.chain_list.append(chain.getChid())
             self.sequence[chain.getChid()] = chain.getSequence()
             #storage.append(chain.getSequence())
-
-        # magic for selection desired atom group (see instruction of prody)
-        # parse = parse.select('not hydrogen')
 
         #now try to fix the pdb from autodock tools
 
@@ -177,8 +174,6 @@ class pdb_container:
         # Make vectors for every single hetero parts
         # Their values will be stored in a dict
 
-        #other = parsePDB('data/{0}/{0}_receptor.pdb'.format(PDB))
-
         for pick_one in HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
             if pick_one.numAtoms() <= 3:
@@ -187,14 +182,19 @@ class pdb_container:
 
 
 
-    def bundle_ligand_data(self,pick_one,fake_ligand=True,OUT=True,compare_ResId_native='default',Id_suffix='default',filename=None):
+    def bundle_ligand_data(self,pick_one,fake_ligand=True,OUT=True,compare_ResId_native='default',Id_suffix='default',filename=None,benchmark=None):
         '''
 
         :param pick_one:
+        :param fake_ligand:
+        :param OUT:
+        :param compare_ResId_native:
+        :param Id_suffix:
+        :param filename:
+        :param benchmark:
         :return:
         '''
         PDB = self.PDBname
-        print 'here'
         if fake_ligand==False:
             ResId = str(pick_one.getResindex())
         else:
@@ -349,47 +349,85 @@ class pdb_container:
             'gridmap_ligand': 'NA',
             'gridmap_complex': 'NA'
         }
-        print 'test'
+
         if fake_ligand== True:
             try:
-                dist =self._calcRMSF(self.heterodict[compare_ResId_native]['ligand'],pick_one)
-                #print dist
+                dist =self._calcRMSD(self.heterodict[compare_ResId_native]['ligand'],pick_one,benchmark=benchmark)
+                print dist
                 self.heterodict[ResId]['RMSF'] = dist
             except:
                 print 'oops'
                 raise IOError
-            self.heterodict[ResId]['Contact Similarity']= self.calcQ(pick_one)
+            self.heterodict[ResId]['Contact Similarity']= self._calcQ(self.heterodict[compare_ResId_native]['ligand'],
+                                                                      pick_one,benchmark=benchmark)
         else:
             self.heterodict[ResId]['Resname']= pick_one.getResname()
             self.heterodict[ResId]['chain'] = pick_one.getChid()
 
-    def _calcRMSF(self,src,tar):
+    def _calcRMSD(self,src,tar,benchmark=None):
+        '''
+
+        :param src:
+        :param tar:
+        :param benchmark: very important, to mark tar's order with src with the exactly same coordinate in benchmark
+                        but in different order.
+        :return:
+        '''
         #TODO finish this stuff
-        if src.numAtoms()!=tar.numAtoms():
-            print 'Can\'t tell RMSF because number of Atoms are not same here!'
+        src_heavy = src.select('not element H')
+        tar_heavy = tar.select('not element H')
+        print src_heavy.numAtoms()
+        print tar_heavy.numAtoms()
+
+
+        if src_heavy.numAtoms()!=tar_heavy.numAtoms():
+            print 'Can\'t tell RMSD because number of Atoms are not same here!'
             return -1
-        src_ag= AtomGroup(src)
-        tar_ag= AtomGroup(tar)
+        src_coord = src_heavy.getCoords()
+        tar_coord = tar_heavy.getCoords()
+
         try:
-            src_ag.addCoordset(tar_ag.getCoordsets())
+            if benchmark is None:
+                return np.sqrt(((src_coord - tar_coord) ** 2).mean())
+            else:
+                # align coordinates here
+                src_coord = benchmark
+                return np.sqrt(((src_coord - tar_coord) ** 2).mean())
         except:
-            print 'lalala'
-        print 'ready to calculate'
-        try:
-            sth = calcRMSF(src_ag)
-        except:
-            print 'hahaha'
-        print sth
+            return 0
+
+    def _calcRMSF(self,src,frames):
         return 0
 
-    def calcQ(self,ligand):
-        #TODO finish this stuff
-        return 1
+    def _calcQ(self, src,tar,benchmark=None):
+        '''
+
+        Compute the fraction of native contacts according the definition from
+        Best, Hummer and Eaton
+        :param src:
+        :param tar:
+        :param benchmark:
+        :return:
+        '''
+        src_heavy = src.select('not element H')
+        tar_heavy = tar.select('not element H')
+        receptor_heavy = self.receptor.select('not element H')
+
+        if src_heavy.numAtoms()!=tar_heavy.numAtoms():
+            print 'Can\'t tell RMSD because number of Atoms are not same here!'
+            return -1
+        src_coord = src_heavy.getCoords()
+        tar_coord = tar_heavy.getCoords()
+        receptor_coord = receptor_heavy.getCoords()
+
+        if benchmark is None:
+            src_coord= benchmark
+        return native_contact(receptor_coord, src_coord, [tar_coord])[0]
 
 
     def bundle_autodock_file(self,ResId,score_only=False):
 
-        if self.heterodict[ResId]['file_generated']==True:
+        if score_only==False and self.heterodict[ResId]['file_generated']==True:
             return
         try:
             PDB= self.PDBname
@@ -554,7 +592,7 @@ class pdb_container:
         return Remark_dict
 
 
-    def bundle_result(self,ResId):
+    def bundle_result(self,ResId,score_only=False):
         '''
         Render results into full vectors which contains info from pdbs
         With the order:
@@ -566,7 +604,7 @@ class pdb_container:
         info_line=[]
         self.pdb_type = self.get_pdb_type()
 
-        self.bundle_autodock_file(ResId)
+        self.bundle_autodock_file(ResId,score_only)
         #self.create_patch_file(ResId,dir='PDB')
 
         dict = self.heterodict[ResId]
@@ -612,7 +650,7 @@ class pdb_container:
         return info_line
 
 
-    def add_ligand(self,ligand_pdb_file,ResIndex, count_index,OUT=True):
+    def add_ligand(self,ligand_pdb_file,ResIndex, count_index,OUT=True,benchmark=None):
         '''
         Add ligands on to pdb. The result should be generated by docking, otherwise it will get some strange result.
         :param ligand_pdb_file:
@@ -625,46 +663,47 @@ class pdb_container:
             #raise IOError
             logging.warning('cannot add ligang file on PDB {}'.format(self.PDBname))
             return
-
         self.bundle_ligand_data(parse,fake_ligand=True,OUT=OUT,compare_ResId_native=ResIndex,
-                                Id_suffix=str(count_index),filename=ligand_pdb_file)
+                                Id_suffix=str(count_index),filename=ligand_pdb_file,benchmark=benchmark)
 
 
 
-    def add_ligands(self,ligand_file,suffix=None):
+    def add_ligands(self,ligand_file,suffix=None,benchmark_file=None):
         '''
         Specialized only to generate data from Xiao's docking result
         :param ligand_file:
         :return:
         '''
+        SYMBOL ='@<TRIPOS>MOLECULE'
 
         try:
+            if benchmark_file is not None:
+                try:
+                    parse = parsePDB(benchmark_file).select('not element H')
+                    bench_coord= parse.getCoords()
+                except:
+                    bench_coord= None
+
             fixfilename = ligand_file.split('/')[-1]
             residue_index = fixfilename.split('_')[1]
+            pdbname = fixfilename.split('_')[0]
+            count = 0
             with open(ligand_file,'rb') as f:
-                output=''
-                index=0
                 for line in f.readlines():
-                    output += line
-                    if 'ENDMDL' in line:
-                        if suffix is not None:
-                            filename = "".join(fixfilename.split('.')[:-1])
-                            filename = filename + "_" + suffix + "_" + str(index) + ".pdb"
-                        else:
-                            filename = "".join(fixfilename.split('.')[:-1])
-                            filename = filename + "_" + str(index) + ".pdb"
+                    if SYMBOL in line:
+                        count+=1
+            print count
+            if suffix is not None:
+                filename = "".join(fixfilename.split('.')[:-1])
+                filename = filename + "_" + suffix + "_"
+            else:
+                filename = "".join(fixfilename.split('.')[:-1])
+                filename = filename + "_"
+            filename = os.path.join(temp_pdb_PREFIX,pdbname+'/'+residue_index+'/'+filename)
+            ls =os.popen('babel {} -opdb {}.pdb -m'.format(ligand_file,filename))
+            for i in range(count):
+                self.add_ligand(filename+str(i+1)+'.pdb',ResIndex=residue_index,count_index=i+1,benchmark=bench_coord)
 
-                        real_dir =os.path.join(temp_pdb_PREFIX,self.PDBname+'/'+residue_index+'/'+filename)
-
-                        with open(real_dir,'wb') as w:
-                            w.write(output)
-                        os.system('babel -h -ipdb {0} -opdb  {0}'.format(real_dir))
-                        self.add_ligand(real_dir, residue_index, index)
-                        output = ''
-                        index+=1
-
-
-            return True
         except:
             return False
 

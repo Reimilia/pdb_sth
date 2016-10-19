@@ -47,9 +47,10 @@ def fn_timer(function):
 
 def bundle_result_mol2_file(source_mol_file ,experimentaldict, pdbdict):
     '''
-    Generate the mol2 file with additional infomation in result folders
-    :param ResId:
-    :param remarkdict:
+    
+    :param source_mol_file:
+    :param experimentaldict:
+    :param pdbdict:
     :return:
     '''
     assert os.path.exists(source_mol_file)
@@ -259,6 +260,7 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
         os.system('rm -r ' + files)
 
     return True
+
 
 if __name__ == '__main__':
 
