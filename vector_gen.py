@@ -7,6 +7,7 @@ import logging
 from mapping import *
 from native_contact import native_contact
 import collections
+from Config import result_PREFIX
 
 '''
 Core part for generating vectors and split source pdb files with
@@ -425,9 +426,9 @@ class pdb_container:
         return native_contact(receptor_coord, src_coord, [tar_coord])[0]
 
 
-    def bundle_autodock_file(self,ResId,score_only=False):
+    def bundle_autodock_file(self,ResId,score_only=False,src_ResId=None):
 
-        if score_only==False and self.heterodict[ResId]['file_generated']==True:
+        if self.heterodict[ResId]['file_generated']==True:
             return
         try:
             PDB= self.PDBname
@@ -435,17 +436,30 @@ class pdb_container:
             middle= self.heterodict[ResId]['center']
             self.heterodict[ResId]['file_generated'] = True
             pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB)
-
             #prepare files:
-            filename2 = pdb_store_dir+'/{1}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
+            if src_ResId is not None:
+                filename2 = pdb_store_dir+'/{}/{}_{}_receptor.pdb'.format(src_ResId, PDB, ResId)
+            else:
+                filename2 = pdb_store_dir+'/{1}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
             writePDB(filename2, self.heterodict[ResId]['protein'])
             # pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
-            filename2 = pdb_store_dir+'/{1}/{0}_{1}_complex.pdb'.format(PDB, ResId)
-            writePDB(filename2, self.heterodict[ResId]['protein'] + self.heterodict[ResId]['ligand'])
+            if src_ResId is not None:
+                filename2 = pdb_store_dir+'/{}/{}_{}_complex.pdb'.format(src_ResId, PDB, ResId)
+            else:
+                filename2 = pdb_store_dir+'/{1}/{0}_{1}_complex.pdb'.format(PDB, ResId)
+            if score_only==False:
+                writePDB(filename2, self.heterodict[ResId]['protein'] + self.heterodict[ResId]['ligand'])
+            #print filename2
             # Do autogrid mapgeneration:
-            ligand_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' +ResId +'/' + naming + '_ligand.pdb')
-            receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_receptor.pdb')
-            complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_complex.pdb')
+            if src_ResId is None:
+                ligand_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' +ResId +'/' + naming + '_ligand.pdb')
+                receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_receptor.pdb')
+                complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_complex.pdb')
+            else:
+                ligand_filename = self.heterodict[ResId]['filename']
+                receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + src_ResId + '/' + naming + '_receptor.pdb')
+                complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + src_ResId + '/' + naming + '_complex.pdb')
+
             fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
             self.heterodict[ResId]['vina_score'] = 'NA'
@@ -562,7 +576,7 @@ class pdb_container:
 
         pass
 
-    def bundle_result_dict(self,ResId):
+    def bundle_result_dict(self,ResId,src_ResId=None):
         '''
         Render results into one_line string which contains docking score and some other infomation from pdb-ligand pair
         :param ResId:
@@ -570,6 +584,8 @@ class pdb_container:
         '''
         dict = self.heterodict[ResId]
         Remark_dict = collections.OrderedDict()
+        self.bundle_autodock_file(ResId, score_only=True, src_ResId=src_ResId)
+
 
         Remark_dict['PDBname'] = self.PDBname
         Remark_dict['PDBResId'] = dict['id']
@@ -670,7 +686,7 @@ class pdb_container:
 
     def add_ligands(self,ligand_file,suffix=None,benchmark_file=None):
         '''
-        Specialized only to generate data from Xiao's docking result
+        Specialized only to generate data from Xiao's docking result and then convert them back
         :param ligand_file:
         :return:
         '''
@@ -699,10 +715,26 @@ class pdb_container:
             else:
                 filename = "".join(fixfilename.split('.')[:-1])
                 filename = filename + "_"
-            filename = os.path.join(temp_pdb_PREFIX,pdbname+'/'+residue_index+'/'+filename)
-            ls =os.popen('babel {} -opdb {}.pdb -m'.format(ligand_file,filename))
-            for i in range(count):
-                self.add_ligand(filename+str(i+1)+'.pdb',ResIndex=residue_index,count_index=i+1,benchmark=bench_coord)
+            filedir = os.path.join(temp_pdb_PREFIX,pdbname+'/'+residue_index+'/'+filename)
+            ls =os.popen('babel {} -opdb {}.pdb -m'.format(ligand_file,filedir))
+            result_filename= os.path.join(result_PREFIX,filename[:-1]+'.mol')
+            with open(result_filename,'wb') as w:
+                for i in range(count):
+                    self.add_ligand(filedir+str(i+1)+'.pdb',ResIndex=residue_index,count_index=i+1,benchmark=bench_coord)
+                    pdbdict = self.bundle_result_dict(residue_index+'_'+str(i+1),src_ResId= residue_index)
+                    print pdbdict
+                    comment = 'Remark:'
+                    if pdbdict is not None:
+                        for k, v in pdbdict.items():
+                            # print k,v
+                            # print comment
+                            comment = comment + '_{' + k + ':' + str(v)+ '}'
+                    comment +='}'
+                    w.write('# '+comment+'\n')
+                    print comment
+                    with open(filedir+str(i+1)+'.mol','rb') as f:
+                        w.writelines(f.read())
+
 
         except:
             return False
@@ -710,7 +742,9 @@ class pdb_container:
     def __repr__(self):
         print self.PDBname+'({} hetero parts found)'.format(len(self.heterodict.keys()))
 
-
+    def __del__(self):
+        files = os.path.join(temp_pdb_PREFIX, self.PDBname)
+        os.system('rm -r ' + files)
 
 class fake_pdb_container:
     '''

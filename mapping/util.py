@@ -356,7 +356,6 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
     lname = ligand.split('/')[-1]
     pdbname = rname.split('_')[0]
     pdbresid = rname.split('_')[1]
-
     #prepare receptor
     if not os.path.exists(receptor) or not os.path.exists(ligand):
         return 'NA'
@@ -381,7 +380,6 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
     #print 'here'
     # get the absolute location
     real_dir = os.path.join(os.path.join(autodock_store_dir,pdbname), pdbresid )
-
     os.chdir(real_dir)
     # write config files
     with open('vina_config.txt', 'w') as f:
