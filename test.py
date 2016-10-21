@@ -8,6 +8,7 @@ import os,sys,io
 import gzip
 from vector_gen import pdb_container,fake_pdb_container
 from mapping import *
+from job_dispatcher import dock_dispatcher
 
 
 #PDB_tar=['1uwj']
@@ -30,5 +31,12 @@ from mapping import *
 
 #quick_split('1avd')
 
-A = pdb_container('1avd',filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
-A.add_ligands('/media/wy/data/fast/1avd/1avd_248_ligand.mol2',suffix='fast',benchmark_file='/media/wy/data/fast/1avd/1avd_248_ligand.pdb')
+config = {
+    'jobname': 'fast',
+    'filedir': '/media/wy/data/fast/',
+    'benchmark': '/media/wy/data/fast/'
+}
+
+A= dock_dispatcher(jobname='fast',filedir= '/media/wy/data/fast/', benchmark= '/media/wy/data/benchmark/')
+
+A.do_one_ligand('1avd','248')

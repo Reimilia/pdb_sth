@@ -1,6 +1,6 @@
 __author__= 'wy'
 
-from prody import *
+import prody as pd
 import numpy as np
 import os,re
 import logging
@@ -111,9 +111,9 @@ class pdb_container:
 
         try:
             if filepos is not None:
-                parse,header = parsePDB(filepos,header=True)
+                parse,header = pd.parsePDB(filepos,header=True)
             else:
-                parse,header = parsePDB(PDB,header=True)
+                parse,header = pd.parsePDB(PDB,header=True)
                 filepos=PDB+'.pdb.gz'
         except:
             #raise IOError
@@ -143,7 +143,7 @@ class pdb_container:
         #storage = []
         #split files by chain
         try:
-            parse = parsePDB(pdb_store_dir+'/{0}.pdb'.format(PDB))
+            parse = pd.parsePDB(pdb_store_dir+'/{0}.pdb'.format(PDB))
         except:
             raise IOError('Cannot parse added H')
 
@@ -168,17 +168,18 @@ class pdb_container:
 
         # if OUT:
         if other is not None:
-            writePDB(pdb_store_dir+'/{0}_receptor.pdb'.format(PDB), other)
+            pd.writePDB(pdb_store_dir+'/{0}_receptor.pdb'.format(PDB), other)
             #repair_pdbfile('data/{0}/{0}_receptor.pdb'.format(PDB),PDB)
         else:
             return
         # Make vectors for every single hetero parts
         # Their values will be stored in a dict
 
-        for pick_one in HierView(hetero).iterResidues():
+        for pick_one in pd.HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
             if pick_one.numAtoms() <= 3:
                 continue
+
             self.bundle_ligand_data(pick_one,fake_ligand=False,OUT=OUT)
 
 
@@ -201,30 +202,38 @@ class pdb_container:
         else:
             ResId = compare_ResId_native + '_' + str(Id_suffix)
 
-        print ResId
         pdb_store_dir = os.path.join(temp_pdb_PREFIX, PDB)
         other = self.receptor
+        # Extract this ligand from protein (as input for openbabel)
+
+
 
         if filename is None:
             filename = pdb_store_dir + '/{1}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
+            if not os.path.isfile(filename):
+                if not os.path.exists(pdb_store_dir + '/' + ResId):
+                    os.mkdir(pdb_store_dir + '/' + ResId)
+            if OUT:
+                try:
+                    pd.writePDB(filename, pick_one)
+                    tar_filename = ''.join(filename.split('.')[:-1])
+                    tar_filename+='.mol'
+                    pdb_to_mol2(filename, tar_filename)
+                except:
+                    print 'Unexpected Error!'
+                    logging.error('Cannot convert {} to mol2 format!'.format(filename.split('/')[-1]))
+                    return
 
-        # Extract this ligand from protein (as input for openbabel)
         if not os.path.isfile(filename):
             if not os.path.exists(pdb_store_dir + '/' + ResId):
                 os.mkdir(pdb_store_dir + '/' + ResId)
 
         naming = '{}_{}'.format(PDB, ResId)
-        if OUT:
-            try:
-                pdb_to_mol2(filename, ''.join(filename.split('.')[:-1]) + '.mol')
-            except:
-                print 'Unexpected Error!'
-                logging.error('Cannot convert {} to mol2 format!'.format(naming))
-                return
+
 
         # Get coordinate of center
         xyz = pick_one.getCoords()
-        middle = calcCenter(pick_one)
+        middle = pd.calcCenter(pick_one)
         # in pi degree , the rotation of the box (if needed)
         rotation = [0, 0, 0]
 
@@ -282,7 +291,7 @@ class pdb_container:
                 num_vector[z_pos * box_num * box_num + y_pos * box_num + x_pos] = atom.getName() + '_' + str(HETERO_PART)
 
         # quick,dirty way to find atoms of protein in cubic boxes
-        defSelectionMacro('inbox',
+        pd.defSelectionMacro('inbox',
                           'abs(x-{1}) <= {0} and abs(y-{2}) <= {0} and abs(z-{3}) <= {0}'.format(self.BOX_size / 2,
                                                                                                  middle[0], middle[1],
                                                                                                  middle[2]))
@@ -441,14 +450,14 @@ class pdb_container:
                 filename2 = pdb_store_dir+'/{}/{}_{}_receptor.pdb'.format(src_ResId, PDB, ResId)
             else:
                 filename2 = pdb_store_dir+'/{1}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
-            writePDB(filename2, self.heterodict[ResId]['protein'])
+            pd.writePDB(filename2, self.heterodict[ResId]['protein'])
             # pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
             if src_ResId is not None:
                 filename2 = pdb_store_dir+'/{}/{}_{}_complex.pdb'.format(src_ResId, PDB, ResId)
             else:
                 filename2 = pdb_store_dir+'/{1}/{0}_{1}_complex.pdb'.format(PDB, ResId)
             if score_only==False:
-                writePDB(filename2, self.heterodict[ResId]['protein'] + self.heterodict[ResId]['ligand'])
+                pd.writePDB(filename2, self.heterodict[ResId]['protein'] + self.heterodict[ResId]['ligand'])
             #print filename2
             # Do autogrid mapgeneration:
             if src_ResId is None:
@@ -673,7 +682,7 @@ class pdb_container:
         :return:
         '''
         try:
-            parse = parsePDB(ligand_pdb_file)
+            parse = pd.parsePDB(ligand_pdb_file)
 
         except:
             #raise IOError
@@ -691,11 +700,11 @@ class pdb_container:
         :return:
         '''
         SYMBOL ='@<TRIPOS>MOLECULE'
-
+        print ligand_file,suffix,benchmark_file
         try:
             if benchmark_file is not None:
                 try:
-                    parse = parsePDB(benchmark_file).select('not element H')
+                    parse = pd.parsePDB(benchmark_file).select('not element H')
                     bench_coord= parse.getCoords()
                 except:
                     bench_coord= None
@@ -717,12 +726,18 @@ class pdb_container:
                 filename = filename + "_"
             filedir = os.path.join(temp_pdb_PREFIX,pdbname+'/'+residue_index+'/'+filename)
             ls =os.popen('babel {} -opdb {}.pdb -m'.format(ligand_file,filedir))
-            result_filename= os.path.join(result_PREFIX,filename[:-1]+'.mol')
+            os.system('babel {} -omol2 {}.mol -m'.format(ligand_file, filedir))
+
+            if suffix is None:
+                result_filename= os.path.join(result_PREFIX,filename[:-1]+'.mol')
+            else:
+                result_filename = os.path.join(result_PREFIX, suffix+'/'+ filename[:-1] + '.mol')
+
             with open(result_filename,'wb') as w:
                 for i in range(count):
                     self.add_ligand(filedir+str(i+1)+'.pdb',ResIndex=residue_index,count_index=i+1,benchmark=bench_coord)
                     pdbdict = self.bundle_result_dict(residue_index+'_'+str(i+1),src_ResId= residue_index)
-                    print pdbdict
+                    #print pdbdict
                     comment = 'Remark:'
                     if pdbdict is not None:
                         for k, v in pdbdict.items():
@@ -731,9 +746,19 @@ class pdb_container:
                             comment = comment + '_{' + k + ':' + str(v)+ '}'
                     comment +='}'
                     w.write('# '+comment+'\n')
-                    print comment
+                    #print comment
                     with open(filedir+str(i+1)+'.mol','rb') as f:
-                        w.writelines(f.read())
+                        tag= False
+                        content =''
+                        for line in f.readlines():
+
+                            if tag:
+                                tag= False
+                                continue
+                            if SYMBOL in line:
+                                tag= True
+                            content+=line
+                        w.write(content)
 
 
         except:
@@ -763,9 +788,9 @@ class fake_pdb_container:
         # Using downloaded is better
         try:
             if filepos is not None:
-                parse = parsePDB(filepos)
+                parse = pd.parsePDB(filepos)
             else:
-                parse = parsePDB(PDB)
+                parse = pd.parsePDB(PDB)
         except:
             # raise IOError
             logging.warning('PDB {} is ignored due to file-not-found error'.format(PDB))
@@ -773,11 +798,11 @@ class fake_pdb_container:
 
         if not os.path.exists('data/'+PDB):
             os.mkdir('data/'+PDB)
-        writePDB('data/{0}/{0}.pdb'.format(PDB),parse)
+        pd.writePDB('data/{0}/{0}.pdb'.format(PDB),parse)
 
         hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
 
-        for pick_one in HierView(hetero).iterResidues():
+        for pick_one in pd.HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
             if pick_one.numAtoms() <= 3:
                 continue
@@ -788,7 +813,7 @@ class fake_pdb_container:
             filename = 'data/{0}/{0}_{1}_ligand.pdb'.format(PDB, ResId)
 
             if not os.path.exists(filename):
-                writePDB(filename, pick_one)
+                pd.writePDB(filename, pick_one)
 
 
 
@@ -826,14 +851,14 @@ class fake_pdb_container:
                     w.write(one_pdb)
                     w.close()
                 one_pdb = ''
-                pdb = parsePDB(TEMP)
+                pdb = pd.parsePDB(TEMP)
                 if pdb.numAtoms() <= 3:
                     continue
 
 
                 # Get coordinate of center
                 xyz = pdb.getCoords()
-                middle = calcCenter(pdb)
+                middle = pd.calcCenter(pdb)
 
                 scale = max(max(xyz[:, 0]) - middle[0], middle[0] - min(xyz[:, 0]),
                             max(xyz[:, 1]) - middle[1], middle[1] - min(xyz[:, 1]),
@@ -876,8 +901,8 @@ class fake_pdb_container:
                         num_vector[x_pos * 400 + y_pos * 20 + z_pos] = atom.getName()+ '_' + str(HETERO_PART)
 
                 # quick,dirty way to find atoms of protein in cubic boxes
-                defSelectionMacro('inbox',
-                                  'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
+                pd.defSelectionMacro('inbox',
+                              'abs(x-{}) < 10 and abs(y-{}) < 10 and abs(z-{}) < 10'.format(middle[0], middle[1],
                                                                                                 middle[2]))
                 nearby = self.protein.select('inbox')
 
