@@ -51,22 +51,6 @@ class dock_dispatcher:
 
 
 
-def get_fask_dock_filenames():
-    pass
-
-def get_rigor_dock_filenames():
-    pass
-
-def get_faskwhole_dock_filenames():
-    pass
-
-def get_rigorwhole_dock_filenames():
-    pass
-
-def get_random_dock_filenames():
-    pass
-
-
 if __name__ == '__main__':
     path= os.path.join(result_PREFIX,'experiment')
     fast_dir = '/n/scratch2/xl198/data/H/wp_fast'
