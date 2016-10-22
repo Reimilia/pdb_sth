@@ -13,6 +13,7 @@ def get_file_list():
 
 def submit_one_job(job_suffix,jobtype,pdb,resid):
 
+    print jobtype,pdb,resid
     with open('dock.sh', 'w') as w:
         w.write('# !/bin/bash\n')
         w.write('# BSUB -n 2\n')
@@ -20,7 +21,7 @@ def submit_one_job(job_suffix,jobtype,pdb,resid):
         w.write('# BSUB -J dock_{}\n'.format(job_suffix))
         w.write('# BSUB -o /home/yw174/job/dock_decorated/{}.out\n'.format(job_suffix))
         w.write('# BSUB -e /home/yw174/job/dock_decorated/{}.err\n'.format(job_suffix))
-        w.write('# BSUB -q long\n')
+        w.write('# BSUB -q short\n')
         w.write('export OMP_NUM_THREADS=1')
         w.write('export PATH=$PATH:/home/yw174/usr/babel/bin/\n')
         w.write('source /home/yw174/python_env/wy/bin/activate\n')
