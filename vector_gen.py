@@ -732,6 +732,9 @@ class pdb_container:
                 result_filename= os.path.join(result_PREFIX,filename[:-1]+'.mol')
             else:
                 result_filename = os.path.join(result_PREFIX, suffix+'/'+ filename[:-1] + '.mol')
+            if os.path.exists(result_filename):
+                print '%s_%s already done!' % (pdbname,residue_index)
+                return
 
             with open(result_filename,'wb') as w:
                 for i in range(count):

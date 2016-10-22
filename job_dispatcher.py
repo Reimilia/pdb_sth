@@ -5,7 +5,7 @@ This script is only intended for Orchestra job_dispatch to do autodock_vina for 
 
 from Config import pdb_PREFIX,temp_pdb_PREFIX,result_PREFIX
 from vector_gen import pdb_container
-import os
+import os,sys
 
 class dock_dispatcher:
 
@@ -49,9 +49,38 @@ class dock_dispatcher:
         except:
             print 'Can\'t find files or something is wrong! at %s_%s'%(pdb_name,ligand_name)
 
+benchmark_dir = '/n/scratch2/xl198/data/H/addH'
+
+job_dir = {
+    'fast' : '/n/scratch2/xl198/data/H/wp_fast',
+    'rigor': '/n/scratch2/xl198/data/H/wp_rigorous',
+    'rigor_so': '/n/scratch2/xl198/data/H/so_rigorous',
+    'random': ''
+}
+job_dispatcher = {
+    'fast' : dock_dispatcher(jobname='fast',filedir= job_dir['fast'],benchmark= benchmark_dir),
+    'rigor': dock_dispatcher(jobname='rigor',filedir= job_dir['rigor'],benchmark= benchmark_dir),
+    'rigor_so': dock_dispatcher(jobname='rigor_so',filedir= job_dir['rigor_so'],benchmark= benchmark_dir),
+    'random': dock_dispatcher(jobname='random',filedir= job_dir['random'],benchmark= benchmark_dir),
+}
+
 
 
 if __name__ == '__main__':
+    try:
+        job_type = sys.argv[1]
+        pdb = sys.argv[2]
+        resid = sys.argv[3]
+    except:
+        print 'Argument expected to be three!'
+    else:
+        if job_type not in job_dispatcher:
+            print 'Incorrect job type!'
+        else:
+            print 'Submitting job {} to {}_{}'.format(job_type,pdb,resid)
+            job_dispatcher[job_type].do_one_ligand(pdb,resid)
+
+    '''
     path= os.path.join(result_PREFIX,'experiment')
     fast_dir = '/n/scratch2/xl198/data/H/wp_fast'
     benchmark_dir = '/n/scratch2/xl198/data/H/addH'
@@ -61,4 +90,4 @@ if __name__ == '__main__':
         pdb = filename.split('_')[0]
         resid= filename.split('_')[1]
         fast_job.do_one_ligand(pdb,resid)
-
+    '''
