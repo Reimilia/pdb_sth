@@ -1,11 +1,8 @@
 '''
-This is the class for docking result processing
-JOBname
-BASEFile dir
-Benchmarkfile dir
-
-
+This script is only intended for Orchestra job_dispatch to do autodock_vina for each ligand.
 '''
+
+
 from Config import pdb_PREFIX,temp_pdb_PREFIX,result_PREFIX
 from vector_gen import pdb_container
 import os
@@ -46,4 +43,38 @@ class dock_dispatcher:
         result_dir= os.path.join(result_PREFIX,self.JOBname)
         if not os.path.exists(result_dir):
             os.mkdir(result_dir)
-        A.add_ligands(ligand_filepos, suffix=self.JOBname, benchmark_file=benchmark_file)
+        try:
+            A.add_ligands(ligand_filepos, suffix=self.JOBname, benchmark_file=benchmark_file)
+            print 'Done %s_%s' %(pdb_name,ligand_name)
+        except:
+            print 'Can\'t find files or something is wrong! at %s_%s'%(pdb_name,ligand_name)
+
+
+
+def get_fask_dock_filenames():
+    pass
+
+def get_rigor_dock_filenames():
+    pass
+
+def get_faskwhole_dock_filenames():
+    pass
+
+def get_rigorwhole_dock_filenames():
+    pass
+
+def get_random_dock_filenames():
+    pass
+
+
+if __name__ == '__main__':
+    path= os.path.join(result_PREFIX,'experiment')
+    fast_dir = '/n/scratch2/xl198/data/H/wp_fast'
+    benchmark_dir = '/n/scratch2/xl198/data/H/addH'
+    fast_job = dock_dispatcher(jobname='fast',filedir= fast_dir,benchmark= benchmark_dir)
+    filenames = os.listdir(path)
+    for filename in filenames:
+        pdb = filename.split('_')[0]
+        resid= filename.split('_')[1]
+        fast_job.do_one_ligand(pdb,resid)
+

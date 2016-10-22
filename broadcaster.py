@@ -5,7 +5,7 @@ import numpy as np
 from main import bindingDB_pdb_tar_generator
 from fileparser import do_one_pdb,initiate_report,quick_split
 from Config import PDB_tar,pdb_PREFIX
-
+from job_dispatcher import *
 '''
     This program use MPI to fulfill multiprocessing need with a dirty way.
     Just divide the PDB list into pieces and broadcast them to all processes
@@ -23,7 +23,7 @@ comm_rank = comm.Get_rank()
 comm_size = comm.Get_size()
 
 
-file_num= len(PDB_tar)
+
 
 
 
@@ -34,9 +34,11 @@ if __name__ == '__main__':
     if comm_rank == 0:
         # the No.0 one hand out issues
         file_list = PDB_tar
+        file_num = len(PDB_tar)
         sys.stderr.write("%d files\n" % len(file_list))
         report_name = initiate_report()
-
+    else:
+        file_num =0
     # broadcast filelist
     file_list = comm.bcast(file_list if comm_rank == 0 else None, root=0)
     local_files_offset = np.linspace(0, file_num, comm_size + 1).astype('int')
