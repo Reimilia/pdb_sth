@@ -45,11 +45,34 @@ def fn_timer(function):
     return function_timer
 
 
+def generate_comment_line(src_dict):
+    comment = '{'
+    for k, v in src_dict.items():
+        k_bundle = ''
+        if isinstance(v, list):
+            # print k,v
+            for item in list(set(v)):
+                # print item
+                if len(k_bundle) == 0:
+                    k_bundle += str(item)
+                else:
+                    k_bundle += '|' + str(item)
+
+            # print k_bundle
+
+            comment = comment + '_{' + k + ':' + k_bundle +'}'
+        elif isinstance(v, dict):
+            comment += generate_comment_line(v)
+        else:
+            comment = comment + '_{' + k + ':' + str(v) + '}'
+    return comment+'}'
+
 def bundle_result_mol2_file(source_mol_file ,experimentaldict, pdbdict):
     '''
-    Generate the mol2 file with additional infomation in result folders
-    :param ResId:
-    :param remarkdict:
+    
+    :param source_mol_file:
+    :param experimentaldict:
+    :param pdbdict:
     :return:
     '''
     assert os.path.exists(source_mol_file)
@@ -61,26 +84,10 @@ def bundle_result_mol2_file(source_mol_file ,experimentaldict, pdbdict):
     comment = 'Remark: '
     if experimentaldict is not None:
         #print experimentaldict
-        for k,v in experimentaldict.items():
-            k_bundle= ''
-            assert isinstance(v,list)
-            #print k,v
-            for item in list(set(v)):
-                #print item
-                if len(k_bundle)==0:
-                    k_bundle+=str(item)
-                else:
-                    k_bundle+='|'+str(item)
-
-            #print k_bundle
-
-            comment = comment + '*@*'+ k + ':'+ k_bundle
+        comment += generate_comment_line(experimentaldict)
     #print pdbdict
     if pdbdict is not None:
-        for k,v in pdbdict.items():
-            #print k,v
-            #print comment
-            comment = comment + '*@*'+ k + ':'+ str(v)
+        comment += generate_comment_line(pdbdict)
 
     with open(real_dir,'wb') as w:
         w.write('# '+comment+'\n')
@@ -219,7 +226,6 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
             ligand_dict= PDBindex.heterodict[k]
             assert 'file_generated' in ligand_dict
             if ligand_dict['file_generated']==True:
-                w.writerow(one_line + PDBindex.bundle_result(k))
                 bundle_result_mol2_file(ligand_dict['filename'][:-4]+'.mol',Comment[k],PDBindex.bundle_result_dict(k))
                 #generate one_line in csv files
                 one_line= [''] * len(experiment_part)
@@ -234,7 +240,7 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
                             k_bundle+='|'+str(item)
                     one_line[i]= k_bundle
                     i+=1
-
+                w.writerow(one_line+PDBindex.bundle_result(k))
 
     except:
         #raise TypeError
@@ -261,11 +267,30 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
 
     return True
 
+
+@fn_timer
+def docking_mol2_generator(pdbname,docking_ligand_file,pdb_filepos=None,benchmark_file=None,suffix=None):
+    '''
+
+    :param pdbname:
+    :param docking_ligand_file:
+    :param pdb_filepos:
+    :param benchmark_file:
+    :param suffix:
+    :return:
+    '''
+    if pdb_filepos is None:
+        pdb_filepos= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
+
+    A = pdb_container('1avd', filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
+    A.add_ligands('/media/wy/data/fast/1avd/1avd_248_ligand.mol2', suffix='fast',
+                  benchmark_file='/media/wy/data/fast/1avd/1avd_248_ligand.pdb')
+
+
 if __name__ == '__main__':
 
 
     for pdb in PDB_tar[0:1]:
         pdb=pdb.lower()
         filepath= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
-        print filepath
         bindingDB_pdb_tar_generator(pdb,filepath,statistic_csv='report.csv',CLEAN=True)

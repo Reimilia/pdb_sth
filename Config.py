@@ -30,8 +30,8 @@ fast_dock_PREFIX = '/n/scratch2/xl198/data/H/fast'
 
 
 # The keys need to be recorded
-key= ['Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
-experiment_part=['NAME',NAME,'Chemical-Ligand Tanomito Similarity']+key
+key= [NAME,'Link to Ligand in BindingDB','Ki (nM)','IC50 (nM)','Kd (nM)','EC50 (nM)','kon (M-1-s-1)','koff (s-1)']
+experiment_part=['NAME']+key
 electype= ['A','C','d','e','HD','N','NA','OA']
 
 PDB_part = ['Target PDB', 'PDBtype', 'PDB_ligand_name' , 'PDB_ligand_resIndex', 'Center of Vector', 'Rotation Degree(pi)', 'Autodockvina_affinity (kcal/mol)','Autodockvina_gauss1','Autodockvina_gauss2','Autodockvina_repulsion','Autodockvina_hydrophobic','Autodockvina_Hydrogen','Resolution(A)','Ligand-Protein Contact Similarity','Ligand RMSF ','PDBSequence', 'Atom_Vector']
