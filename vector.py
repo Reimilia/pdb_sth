@@ -52,9 +52,9 @@ def get_relative_coordinate_in_transform(coord, rotation, transition):
     :return:
     '''
     tar= transition_by_vector(coord, transition)
-    tar= rotation_by_x(tar,rotation[0])
-    tar = rotation_by_x(tar, rotation[1])
-    tar = rotation_by_x(tar, rotation[2])
+    tar= rotation_by_x(tar  , -rotation[0])
+    tar = rotation_by_x(tar , -rotation[1])
+    tar = rotation_by_x(tar , -rotation[2])
     return tar
 
 def in_cubic_box(coords, center, BOXsize= 20):
