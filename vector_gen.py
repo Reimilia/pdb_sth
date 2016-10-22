@@ -477,6 +477,7 @@ class pdb_container:
             return
 
         box_num = int(np.ceil(self.BOX_range / self.BOX_size))
+        print box_num
 
         try:
             self.heterodict[ResId]['vina_score']=do_auto_vina_score(receptor_filename, ligand_filename, middle)
