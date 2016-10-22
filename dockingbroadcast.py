@@ -41,9 +41,10 @@ if __name__ == '__main__':
         file_num = len(file_list)
         sys.stderr.write("%d files\n" % len(file_list))
     else:
-        file_num =0
+        file_num = 0
     # broadcast filelist
     file_list = comm.bcast(file_list if comm_rank == 0 else None, root=0)
+    file_num = len(file_list)
     local_files_offset = np.linspace(0, file_num, comm_size + 1).astype('int')
 
     # receive own part
