@@ -33,7 +33,7 @@ def submit_one_job(job_suffix,jobtype,pdb,resid):
 
 
 if __name__=='__main__':
-    filelist = get_file_list()[:1]
+    filelist = get_file_list()[:2000]
     for filename in filelist:
         pdb = filename.split('_')[0]
         resid = filename.split('_')[1]
