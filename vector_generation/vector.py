@@ -1,5 +1,6 @@
 import prody as protein
 import numpy as np
+import matplotlib as pl
 import os
 
 '''
@@ -9,8 +10,11 @@ This will help when the program needs to judge whether the ligand is in rotated 
 To be simple , all matrix is right-associative i.e.
 [x',y',z',1] = [x,y,z,1]*T
 
+(sometimes [x',y',z',1].transpose() = T*[x,y,z,1].transpose() is also a solution)
+
 T is transformation matrix
 '''
+
 def rotation_matrix_by_x(theta):
     '''
     just return the rotation matrix with clockwise theta degree along x-axis
@@ -108,6 +112,8 @@ def get_transformation_inv_fromoldtonew(new_xcoord,new_ycoord,new_zcoord,transit
 def get_coord_after_transformation(coord,transformation_matrix):
     return np.dot(coord+[1],transformation_matrix)[0:2]
 
+def get_zyx_position(coord,length):
+    return coord[2]*length*length + coord[1]*length + coord[0]
 
 
 class Box:
@@ -214,7 +220,9 @@ class Box:
         return self.down_left + np.dot(coord,np.matrix([self.x_axis,self.y_axis,self.z_axis]))
 
     def get_lattice_coord(self,coords):
-        return get_coord_after_transformation(coords, self.transition_matrix)
+        new_coord=get_coord_after_transformation(coords, self.transition_matrix)-self.down_left
+        print np.floor(new_coord)
+        return np.floor(new_coord)
 
     def in_cubic_box(self,coords):
         '''
@@ -228,14 +236,27 @@ class Box:
         print relative_coords
         return (0<=relative_coords[0]<self.Boxsize and 0<=relative_coords[1]<self.Boxsize and 0<=relative_coords[2]<self.Boxsize)
 
+    def _box_visualize(self):
+        '''
+        For fun or check
+        To be continued
+        :return: the plot of box (in Absolute coordinatesystem)
+        '''
 
+
+# Tag for hetero atoms
+HETERO_PART = 'L'
+# Tag for protein atoms
+PROTEIN_PART = 'P'
 
 class vector_generator:
     receptor= None
     heterodict={}
     boxdict={}
+    Boxsize=20
+    Boxrange=1
 
-    def __init__(self,receptor_filename):
+    def __init__(self,receptor_filename,Boxsize=20,Boxrange=1):
         '''
         :param receptor_filename: source pdb file or .gz file that can be opened and parsed
         '''
@@ -263,7 +284,10 @@ class vector_generator:
             self.heterodict[ResId]=pick_one
 
             # Set up a new box class here
-            self.boxdict[ResId]= Box(center=protein.calcCenter(pick_one).getCoords(),Boxsize=20,Boxrange=1)
+            self.boxdict[ResId]= Box(center=protein.calcCenter(pick_one).getCoords(),Boxsize=Boxsize,Boxrange=Boxrange)
+
+        self.Boxsize=Boxsize
+        self.Boxrange=Boxrange
 
     def set_ligand_from_file(self,ligand_filename):
         '''
@@ -290,10 +314,20 @@ class vector_generator:
 
         ResId= ''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16)))
         self.heterodict[ResId] = ligand
+        self.boxdict[ResId] = Box(center=protein.calcCenter(ligand).getCoords(), Boxsize=self.Boxsize, Boxrange=self.Boxrange)
         return ResId
 
     def generate_vector_from_file(self,ligand_filename,try_threshold=200,shift_threshold=[1,1,1]):
         '''
+        the main program to generate vectors from a ligand in a specific receptor:
+        pipeline:
+        1. do transformation to box
+        2. see if the ligand is still in the box, if not do 1 again until try over try_threshold times, otherwise move to 3
+        3. select inbox receptor part
+        4. bundle the vector and return
+
+        By default, the center is average of each atom's position. But the program can do little shift to this point because
+        when the box is doing rotation, sometimes some part of ligand might out of the range, it needs adjustment.
 
         :param ligand_filename: where source file can be read and parsed , pdb or mol2 format only
         :param try_threshold: if random transition failed over this many times, the program will inform an error
@@ -310,6 +344,7 @@ class vector_generator:
         Box = self.boxdict[ResId]
         ligand_center = protein.calcCenter(ligand).getCoords()
 
+        # only do rotation
         for iteration_step in range(try_threshold/2):
             # Now try to do one rotation
 
@@ -325,6 +360,94 @@ class vector_generator:
                 continue
 
 
+            #Now select potential receptor part
+            residues = self.receptor.select('protein as within {} of center'
+                                            .format(int(np.ceil(np.sqrt(3)*self.Boxsize/2))), center=ligand_center)
+
+            if residues is None:
+                print 'Try %s : This box has no protein atoms nearby' % str(iteration_step)
+                continue
+            num_vector = [''] * (self.Boxsize**3)
+
+            # First add ligand part
+            for atom in ligand.iterAtoms():
+                coord = atom.getCoords()
+                if Box.in_cubic_box(coord)==False:
+                    continue
+                lattice = Box.get_lattice_coord(coord)
+                pos = get_zyx_position(lattice,self.Boxsize)
+
+                num_vector[pos]= atom.getName() + '_' + str(HETERO_PART)
+
+            # Then add receptor part
+            for atom in residues.iterAtoms():
+                coord = atom.getCoords()
+                if Box.in_cubic_box(coord)==False:
+                    continue
+                lattice = Box.get_lattice_coord(coord)
+                pos = get_zyx_position(lattice,self.Boxsize)
+
+                if num_vector[pos]!='':
+                    print 'Now we have a conflict at '+ str(lattice) +', atom %s will be put with ligand' \
+                                                                      '\'s atom together'%(atom.getName())
+                    num_vector[pos]+='|' +atom.getName() + '_' + str(PROTEIN_PART)
+                else:
+                    num_vector[pos]=atom.getName() + '_' + str(PROTEIN_PART)
+
+            return True, num_vector
+
+        # try iteration and shift altogether
+        for iteration_step in range(try_threshold/2,try_threshold):
+            # Now try to do one rotation
+
+            rotation = np.random.random_sample(3) * np.pi / 4
+            transition = (np.random().random_sample(3)-[0.5]*3) * 2 * shift_threshold
+            Box.transform(rotation,transition=transition)
+            Tag = True
+            for atom in ligand.iterAtoms():
+                coord = atom.getCoords()
+                if Box.in_cubic_box(coord) == False:
+                    Tag = False
+            if Tag == False:
+                print 'Try %s : rotation plus transition failed to contain ligand.' % str(iteration_step)
+                continue
+
+            # Now select potential receptor part
+            residues = self.receptor.select('protein as within {} of center'
+                                            .format(int(np.ceil(np.sqrt(3) * self.Boxsize / 2))), center=Box.center)
+
+            if residues is None:
+                print 'Try %s : This box has no protein atoms nearby' % str(iteration_step)
+                continue
+            num_vector = [''] * (self.Boxsize ** 3)
+
+            # First add ligand part
+            for atom in ligand.iterAtoms():
+                coord = atom.getCoords()
+                if Box.in_cubic_box(coord) == False:
+                    continue
+                lattice = Box.get_lattice_coord(coord)
+                pos = get_zyx_position(lattice, self.Boxsize)
+
+                num_vector[pos] = atom.getName() + '_' + str(HETERO_PART)
+
+            # Then add receptor part
+            for atom in residues.iterAtoms():
+                coord = atom.getCoords()
+                if Box.in_cubic_box(coord) == False:
+                    continue
+                lattice = Box.get_lattice_coord(coord)
+                pos = get_zyx_position(lattice, self.Boxsize)
+
+                if num_vector[pos] != '':
+                    print 'Now we have a conflict at ' + str(lattice) + ', atom %s will be put with ligand' \
+                                                                        '\'s atom together' % (atom.getName())
+                    num_vector[pos] += '|' + atom.getName() + '_' + str(PROTEIN_PART)
+                else:
+                    num_vector[pos] = atom.getName() + '_' + str(PROTEIN_PART)
+
+            return True, num_vector
 
 
+        print 'try enough times and all failed, consider a smaller ligand instead.'
         return False,[0]*8000

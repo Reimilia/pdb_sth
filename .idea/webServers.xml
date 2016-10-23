@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="fc5b2809-8d96-40c6-bb56-f971aeac1b92" name="Orchestra" url="http://orchestra.med.harvard.edu">
+        <fileTransfer host="orchestra.med.harvard.edu" port="22" rootFolder="/home/yw174" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

@@ -284,7 +284,7 @@ def docking_mol2_generator(pdbname,docking_ligand_file,pdb_filepos=None,benchmar
 
     A = pdb_container('1avd', filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
     A.add_ligands('/media/wy/data/fast/1avd/1avd_248_ligand.mol2', suffix='fast',
-                  benchmark_file='/media/wy/data/fast/1avd/1avd_248_ligand.pdb')
+                  benchmark_file='/media/wy/data/fast/1avd/example.pdb')
 
 
 if __name__ == '__main__':
