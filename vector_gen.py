@@ -272,7 +272,7 @@ class pdb_container:
                                  np.linspace(middle[1] - scale_extension, middle[1] + scale_extension, box_num),
                                  np.linspace(middle[2] - scale_extension, middle[2] + scale_extension, box_num))
 
-        # print xx
+        print box_num
         vector = np.c_[xx.ravel(), yy.ravel(), zz.ravel()]
         num_vector = [0] * len(vector)
 
