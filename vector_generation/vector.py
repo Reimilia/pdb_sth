@@ -22,7 +22,7 @@ def rotation_matrix_by_x(theta):
     :param theta:
     :return:
     '''
-    return np.matrix(
+    return np.array(
         [[1,0,0,0],
          [0,np.cos(theta),-np.sin(theta),0],
          [0,np.sin(theta),np.cos(theta),0],
@@ -35,7 +35,7 @@ def rotation_matrix_by_y(theta):
     :param theta:
     :return:
     '''
-    return np.matrix(
+    return np.array(
         [[np.cos(theta),0,np.sin(theta),0],
          [0,1,0,0],
          [-np.sin(theta),0,np.cos(theta),0],
@@ -48,10 +48,10 @@ def rotation_matrix_by_z(theta):
     :param theta:
     :return:
     '''
-    return np.matrix(
+    return np.array(
         [[np.cos(theta),-np.sin(theta),0,0],
          [np.sin(theta),np.cos(theta),0,0],
-         [0,0,1,0]
+         [0,0,1,0],
          [0,0,0,1]])
 
 
@@ -62,7 +62,7 @@ def transition_matrix(coord):
     :param shift:
     :return:
     '''
-    return np.matrix(
+    return np.array(
         [[1,0,0,0],
          [0,1,0,0],
          [0,0,1,0],
@@ -94,23 +94,34 @@ def get_rotation_marix_along_anyaxis(center,rotation):
     R_z = rotation_matrix_by_z(rotation[2])
     return reduce(np.dot, [T,R_x,R_y,R_z,R_y_inv,R_x_inv,T_inv])
 
-def get_transformation_inv_fromoldtonew(new_xcoord,new_ycoord,new_zcoord,transition):
+def get_transformation_inv_fromoldtonew(new_xcoord,new_ycoord,new_zcoord,origin_coord):
     '''
 
     :param new_xcoord: (1,0,0) -> (ux,uy,uz)
     :param new_ycoord: (0,1,0) -> (vx,vy,vz)
     :param new_zcoord: (0,0,1) -> (wx,wy,wz)
-    :param transition: **very important** this is used to align the start (may be down-left coordinate after rotation)
+    :param origin_coord: **very important** this is used to align the start (may be down-left coordinate after rotation)
     because we need vectors instead of absolute coordinate to calculate
     i.e. (a*ux+transition[0],a*uy+transition[1],a*uz+transition[2]) might represent one edge of a cubic box.
     :return: **Inverse matrix** of this transformation
     '''
-    T_inv = transition_matrix(-transition)
-    U= np.matrix([new_xcoord,new_ycoord,new_zcoord])
-    return np.dot(T_inv*U.transpose())
+    T_inv = transition_matrix(-origin_coord)
+    U= np.array([[new_xcoord[0],new_xcoord[1],new_xcoord[2],0],
+                  [new_ycoord[0],new_ycoord[1],new_ycoord[2],0],
+                  [new_zcoord[0],new_zcoord[1],new_zcoord[2],0],
+                  [0,0,0,1]],dtype=float)
+    return np.dot(T_inv,U.transpose())
 
 def get_coord_after_transformation(coord,transformation_matrix):
-    return np.dot(coord+[1],transformation_matrix)[0:2]
+    '''
+    Get absolute coordinate in original coordinate system (before rotation)
+    :param coord:
+    :param transformation_matrix:
+    :return:
+    '''
+    extend_coord = np.resize(coord,4)
+    extend_coord[3]=1
+    return (np.dot(extend_coord,transformation_matrix)[0:3])
 
 def get_zyx_position(coord,length):
     return coord[2]*length*length + coord[1]*length + coord[0]
@@ -134,12 +145,12 @@ class Box:
 
     def __init__(self,**kwargs):
         if 'center' in kwargs:
-            self.center= kwargs['center']
+            self.center= np.array(kwargs['center'],dtype=float)
         if 'Boxsize' in kwargs:
             self.Boxsize = kwargs['Boxsize']
         if 'Boxrange' in kwargs:
             self.Boxrange = kwargs['Boxrange']
-        self.down_left= self.center-[self.Boxsize/2,self.Boxsize/2,self.Boxsize/2]
+        self.down_left= self.center-np.array([self.Boxsize/2,self.Boxsize/2,self.Boxsize/2])
         self.Boxnum=  int(np.ceil(self.Boxsize/ self.Boxrange))
 
     def change_size(self,Boxsize,Boxrange=1):
@@ -155,11 +166,11 @@ class Box:
         self.down_left = self.center- self.Boxsize/2 * (x_vec+y_vec+z_vec)
 
     def set_default(self,center,Boxsize,Boxrange):
-        self.center = center
+        self.center = np.array(center,dtype=float)
         self.Boxsize = Boxsize
         self.Boxrange = Boxrange
 
-        self.down_left = self.center - [self.Boxsize / 2, self.Boxsize / 2, self.Boxsize / 2]
+        self.down_left = self.center - np.array([self.Boxsize / 2, self.Boxsize / 2, self.Boxsize / 2])
         self.Boxnum = int(np.ceil(self.Boxsize / self.Boxrange))
         self.x_axis = np.array([1, 0, 0])
         self.y_axis = np.array([0, 1, 0])
@@ -187,18 +198,31 @@ class Box:
                 self.center= kwargs['center']
         else:
             if 'transition' in kwargs:
-                self.center += kwargs['transition']
+                self.center += np.array(kwargs['transition'])
         T= get_rotation_marix_along_anyaxis(self.center,rotation)
+        #print T
         self.rotated = True
         if self.transition_matrix is None:
             self.transition_matrix = T
         else:
             self.transition_matrix *= T
-        self.x_axis = get_coord_after_transformation(self.x_axis, T)
-        self.y_axis = get_coord_after_transformation(self.y_axis, T)
-        self.z_axis = get_coord_after_transformation(self.z_axis, T)
 
-        self.coordinate_shift_matrix = get_transformation_inv_fromoldtonew(self.x_axis,self.y_axis,self.z_axis,self.down_left)
+        new_down_left = get_coord_after_transformation(self.down_left,T)
+        self.x_axis = get_coord_after_transformation(self.down_left+self.x_axis, T)-new_down_left
+        self.y_axis = get_coord_after_transformation(self.down_left+self.y_axis, T)-new_down_left
+        self.z_axis = get_coord_after_transformation(self.down_left+self.z_axis, T)-new_down_left
+
+        self.down_left = new_down_left
+        #print self.x_axis
+        #print self.y_axis
+        #print self.z_axis
+        #print self.down_left
+
+        self.coordinate_shift_matrix = \
+            get_transformation_inv_fromoldtonew(self.x_axis,
+                                                self.y_axis,
+                                                self.z_axis,
+                                                self.down_left)
 
     def find_lattice_coord(self,coord):
         '''
@@ -216,13 +240,19 @@ class Box:
             print 'z-coordinate out of border!'
             return
 
-        print self.down_left + np.dot(coord,np.matrix([self.x_axis,self.y_axis,self.z_axis]))
-        return self.down_left + np.dot(coord,np.matrix([self.x_axis,self.y_axis,self.z_axis]))
+        #print self.down_left + np.dot(coord,np.array([self.x_axis,self.y_axis,self.z_axis]))
+        return self.down_left + np.dot(coord,np.array([self.x_axis,self.y_axis,self.z_axis]))
 
     def get_lattice_coord(self,coords):
-        new_coord=get_coord_after_transformation(coords, self.transition_matrix)-self.down_left
-        print np.floor(new_coord)
-        return np.floor(new_coord)
+        '''
+        coords is one coordinate in old coordinate system, this function will return new coordinate
+        and return the shift from the down_left point
+        :param coords:
+        :return:
+        '''
+        new_coord=get_coord_after_transformation(coords, self.coordinate_shift_matrix)
+        #print new_coord
+        return np.round(new_coord)
 
     def in_cubic_box(self,coords):
         '''
@@ -232,8 +262,7 @@ class Box:
         :param BOXsize:
         :return:
         '''
-        relative_coords= get_coord_after_transformation(coords,self.coordinate_shift_matrix)
-        print relative_coords
+        relative_coords= self.get_lattice_coord(coords)
         return (0<=relative_coords[0]<self.Boxsize and 0<=relative_coords[1]<self.Boxsize and 0<=relative_coords[2]<self.Boxsize)
 
     def _box_visualize(self):
@@ -243,6 +272,44 @@ class Box:
         :return: the plot of box (in Absolute coordinatesystem)
         '''
 
+    def self_test(self):
+        rotation = np.random.random_sample(3) * np.pi / 4
+        transition = (np.random.random_sample(3) - [0.25] * 3) * 2 * [0.5,0.5,0.5]
+        print 'Rotation:'
+        print rotation
+        print 'Transition:'
+        print transition
+        print 'Begin Testing:'
+
+        origin_down_left = self.down_left
+        origin_x = self.x_axis
+        origin_y = self.y_axis
+        origin_z = self.z_axis
+
+
+        self.transform(rotation, transition=transition)
+
+        if self.rotated==True:
+            print 'Already rotated. Now let us pick some point on lattice randomly'
+
+        NUM= 10
+        sample=[]
+        for i in range(NUM):
+            id = str(i+1)
+            lattice= np.random.randint(0,self.Boxsize-1,3)
+            sample.append(lattice)
+            print 'Pick lattice : ' + id
+            print 'lattice coordinate: '+ str(lattice)
+
+            coord = origin_down_left + np.dot(lattice,np.array([origin_x,origin_y,origin_z]))
+
+            print 'original point is : '+ str(coord)
+            new_coord =self.find_lattice_coord(lattice)
+            print 'new coordinate of lattice {}'.format(new_coord)
+            print 'the inner function shows the new coordinate is for lattice {}'.format(self.get_lattice_coord(new_coord))
+
+
+        print '\nTest ended.'
 
 # Tag for hetero atoms
 HETERO_PART = 'L'
@@ -274,6 +341,9 @@ class vector_generator:
             return
 
         hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
+
+        if hetero is None:
+            return
 
         for pick_one in protein.HierView(hetero).iterResidues():
             # less than 3 atoms may be not ok
@@ -314,10 +384,10 @@ class vector_generator:
 
         ResId= ''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16)))
         self.heterodict[ResId] = ligand
-        self.boxdict[ResId] = Box(center=protein.calcCenter(ligand).getCoords(), Boxsize=self.Boxsize, Boxrange=self.Boxrange)
+        self.boxdict[ResId] = Box(center=protein.calcCenter(ligand), Boxsize=self.Boxsize, Boxrange=self.Boxrange)
         return ResId
 
-    def generate_vector_from_file(self,ligand_filename,try_threshold=200,shift_threshold=[1,1,1]):
+    def generate_vector_from_file(self,ligand_filename,try_threshold=200,shift_threshold=[1,1,1],OUT=False,verbose=False):
         '''
         the main program to generate vectors from a ligand in a specific receptor:
         pipeline:
@@ -342,7 +412,7 @@ class vector_generator:
         ligand = self.heterodict[ResId]
 
         Box = self.boxdict[ResId]
-        ligand_center = protein.calcCenter(ligand).getCoords()
+        ligand_center = protein.calcCenter(ligand)
 
         # only do rotation
         for iteration_step in range(try_threshold/2):
@@ -356,16 +426,18 @@ class vector_generator:
                 if Box.in_cubic_box(coord)==False:
                     Tag= False
             if Tag == False:
-                print 'Try %s : rotation failed to contain ligand.' % str(iteration_step)
+                if verbose==True:
+                    print 'Try %s : rotation failed to contain ligand.' % str(iteration_step)
                 continue
 
 
             #Now select potential receptor part
-            residues = self.receptor.select('protein as within {} of center'
+            residues = self.receptor.select('protein and same residue as within {} of center'
                                             .format(int(np.ceil(np.sqrt(3)*self.Boxsize/2))), center=ligand_center)
 
             if residues is None:
-                print 'Try %s : This box has no protein atoms nearby' % str(iteration_step)
+                if verbose==True:
+                    print 'Try %s : This box has no protein atoms nearby' % str(iteration_step)
                 continue
             num_vector = [''] * (self.Boxsize**3)
 
@@ -376,8 +448,11 @@ class vector_generator:
                     continue
                 lattice = Box.get_lattice_coord(coord)
                 pos = get_zyx_position(lattice,self.Boxsize)
-
-                num_vector[pos]= atom.getName() + '_' + str(HETERO_PART)
+                pos = int(np.round(pos))
+                tag = atom.getName() + '_' + str(HETERO_PART)
+                if verbose==True:
+                    print 'We found an atom at {} with tag {}'.format(pos,tag)
+                num_vector[pos]= tag
 
             # Then add receptor part
             for atom in residues.iterAtoms():
@@ -386,14 +461,25 @@ class vector_generator:
                     continue
                 lattice = Box.get_lattice_coord(coord)
                 pos = get_zyx_position(lattice,self.Boxsize)
+                pos = int(np.round(pos))
+                tag = atom.getName() + '_' + str(PROTEIN_PART)
 
+                if verbose==True:
+                    print 'We found an atom at {} with tag {}'.format(pos, tag)
                 if num_vector[pos]!='':
-                    print 'Now we have a conflict at '+ str(lattice) +', atom %s will be put with ligand' \
+                    if verbose==True:
+                        print 'Now we have a conflict at '+ str(lattice) +', atom %s will be put with ligand' \
                                                                       '\'s atom together'%(atom.getName())
-                    num_vector[pos]+='|' +atom.getName() + '_' + str(PROTEIN_PART)
+                    num_vector[pos]+='|' + tag
                 else:
-                    num_vector[pos]=atom.getName() + '_' + str(PROTEIN_PART)
+                    num_vector[pos]= tag
 
+            if OUT==True:
+                #For verbose purpose
+                ligand.select('all').setResnums(9999)
+                protein.saveAtoms(residues,filename='temp.ag.npz')
+                atomgroup = protein.loadAtoms('temp.ag.npz')
+                protein.writePDB('debug.pdb',ligand+atomgroup)
             return True, num_vector
 
         # try iteration and shift altogether
@@ -401,7 +487,7 @@ class vector_generator:
             # Now try to do one rotation
 
             rotation = np.random.random_sample(3) * np.pi / 4
-            transition = (np.random().random_sample(3)-[0.5]*3) * 2 * shift_threshold
+            transition = (np.random.random_sample(3)-[shift_threshold/2]*3) * 2 * shift_threshold
             Box.transform(rotation,transition=transition)
             Tag = True
             for atom in ligand.iterAtoms():
@@ -409,15 +495,17 @@ class vector_generator:
                 if Box.in_cubic_box(coord) == False:
                     Tag = False
             if Tag == False:
-                print 'Try %s : rotation plus transition failed to contain ligand.' % str(iteration_step)
+                if verbose == True:
+                    print 'Try %s : rotation plus transition failed to contain ligand.' % str(iteration_step)
                 continue
 
             # Now select potential receptor part
-            residues = self.receptor.select('protein as within {} of center'
+            residues = self.receptor.select('protein and same residue as within {} of center'
                                             .format(int(np.ceil(np.sqrt(3) * self.Boxsize / 2))), center=Box.center)
 
             if residues is None:
-                print 'Try %s : This box has no protein atoms nearby' % str(iteration_step)
+                if verbose == True:
+                    print 'Try %s : This box has no protein atoms nearby' % str(iteration_step)
                 continue
             num_vector = [''] * (self.Boxsize ** 3)
 
@@ -428,8 +516,10 @@ class vector_generator:
                     continue
                 lattice = Box.get_lattice_coord(coord)
                 pos = get_zyx_position(lattice, self.Boxsize)
-
-                num_vector[pos] = atom.getName() + '_' + str(HETERO_PART)
+                pos = int(np.round(pos))
+                tag = atom.getName() + '_' + str(HETERO_PART)
+                print 'We found an atom at {} with tag {}'.format(pos, tag)
+                num_vector[pos] = tag
 
             # Then add receptor part
             for atom in residues.iterAtoms():
@@ -438,16 +528,30 @@ class vector_generator:
                     continue
                 lattice = Box.get_lattice_coord(coord)
                 pos = get_zyx_position(lattice, self.Boxsize)
-
+                pos = int(np.round(pos))
+                tag = atom.getName() + '_' + str(PROTEIN_PART)
+                if verbose == True:
+                    print 'We found an atom at {} with tag {}'.format(pos, tag)
                 if num_vector[pos] != '':
-                    print 'Now we have a conflict at ' + str(lattice) + ', atom %s will be put with ligand' \
+                    if verbose ==True:
+                        print 'Now we have a conflict at ' + str(lattice) + ', atom %s will be put with ligand' \
                                                                         '\'s atom together' % (atom.getName())
-                    num_vector[pos] += '|' + atom.getName() + '_' + str(PROTEIN_PART)
+                    num_vector[pos] += '|' + tag
                 else:
-                    num_vector[pos] = atom.getName() + '_' + str(PROTEIN_PART)
+                    num_vector[pos] = tag
 
+            if OUT==True:
+                #For verbose purpose
+                ligand.select('all').setResnums(9999)
+                protein.writePDB('debug.pdb',ligand+residues)
             return True, num_vector
 
-
-        print 'try enough times and all failed, consider a smaller ligand instead.'
+        if verbose == True:
+            print 'try enough times and all failed, consider a smaller ligand instead.'
         return False,[0]*8000
+
+    def __del__(self):
+        if os.path.exists('temp.ag.npz'):
+            os.remove('temp.ag.npz')
+        if os.path.exists('temp.pdb'):
+            os.remove('temp.pdb')
