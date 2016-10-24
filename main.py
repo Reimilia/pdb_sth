@@ -290,7 +290,7 @@ def docking_mol2_generator(pdbname,docking_ligand_file,pdb_filepos=None,benchmar
 if __name__ == '__main__':
 
 
-    for pdb in PDB_tar[0:1]:
+    for pdb in ['1r5k']:
         pdb=pdb.lower()
         filepath= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
         bindingDB_pdb_tar_generator(pdb,filepath,statistic_csv='report.csv',CLEAN=True)
