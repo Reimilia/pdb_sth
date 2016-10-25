@@ -6,6 +6,7 @@ This script is only intended for Orchestra job_dispatch to do autodock_vina for 
 from Config import pdb_PREFIX,temp_pdb_PREFIX,result_PREFIX
 from vector_gen import pdb_container
 import os,sys
+import thread
 
 class dock_dispatcher:
 
@@ -78,6 +79,7 @@ if __name__ == '__main__':
             print 'Incorrect job type!'
         else:
             print 'Submitting job {} to {}_{}'.format(job_type,pdb,resid)
+            thread.sleep(5)
             job_dispatcher[job_type].do_one_ligand(pdb,resid)
 
     '''
