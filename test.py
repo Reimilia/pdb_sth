@@ -37,6 +37,6 @@ config = {
     'benchmark': '/media/wy/data/fast/'
 }
 
-A= dock_dispatcher(jobname='fast',filedir= '/media/wy/data/fast/', benchmark= '/media/wy/data/benchmark/')
+A= dock_dispatcher(jobname='rigor',filedir= '/media/wy/data/rigor/', benchmark= '/media/wy/data/benchmark/')
 
-A.do_one_ligand('1avd','248')
+A.do_one_ligand('1jdc','419')
