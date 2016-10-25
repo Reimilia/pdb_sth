@@ -2,7 +2,7 @@
 <project version="4">
   <component name="WebServers">
     <option name="servers">
-      <webServer id="bc68d766-d269-4741-96a5-3e3b2312856c" name="Orchestra" url="YW174@orchestra.med.harvard.edu">
+      <webServer id="bc68d766-d269-4741-96a5-3e3b2312856c" name="Orchestra" url="orchestra.med.harvard.edu">
         <fileTransfer host="orchestra.med.harvard.edu" port="22" rootFolder="/home/yw174" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />

@@ -14,19 +14,21 @@ def get_file_list():
 def submit_one_job(job_suffix,jobtype,pdb,resid):
 
     print jobtype,pdb,resid
+    string = jobtype+ '_' + pdb+ '_' +resid
+    print string
     with open('dock.sh', 'w') as w:
         w.write('# !/bin/bash\n')
-        w.write('# BSUB -n 2\n')
+        w.write('# BSUB -n 1\n')
         w.write('# BSUB -W 5:00\n')
-        w.write('# BSUB -J dock_{}\n'.format(job_suffix))
-        w.write('# BSUB -o /home/yw174/job/dock_decorated/{}.out\n'.format(job_suffix))
-        w.write('# BSUB -e /home/yw174/job/dock_decorated/{}.err\n'.format(job_suffix))
+        w.write('# BSUB -J dock_%s\n'%(string))
+        w.write('# BSUB -o /home/yw174/job/dock_decorated/jobtype/%s.out\n'%(string))
+        w.write('# BSUB -e /home/yw174/job/dock_decorated/jobtype/%s.err\n'%(string))
         w.write('# BSUB -q short\n')
-        w.write('export OMP_NUM_THREADS=1')
+        w.write('export OMP_NUM_THREADS=1\n')
         w.write('export PATH=$PATH:/home/yw174/usr/babel/bin/\n')
         w.write('source /home/yw174/python_env/wy/bin/activate\n')
         w.write('cd /home/yw174/program/pdb_sth\n')
-        cmd = 'python job_dispatcher.py {} {} {}'.format(jobtype,pdb,resid)
+        cmd = 'python job_dispatcher.py %s %s %s'%(jobtype,pdb,resid)
         w.write(cmd + '\n')
     os.system('chmod 777 dock.sh')
     os.system('bsub < dock.sh')
