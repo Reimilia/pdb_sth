@@ -21,8 +21,8 @@ def submit_one_job(job_suffix,jobtype,pdb,resid):
         w.write('# BSUB -n 1\n')
         w.write('# BSUB -W 5:00\n')
         w.write('# BSUB -J dock_%s\n'%(string))
-        w.write('# BSUB -o /home/yw174/job/dock_decorated/%s/%s.out\n'%(jobtype,string))
-        w.write('# BSUB -e /home/yw174/job/dock_decorated/%s/%s.err\n'%(jobtype,string))
+        w.write('# BSUB -o /home/yw174/job/dock_decorated/%s/out_%s\n'%(jobtype,string))
+        w.write('# BSUB -e /home/yw174/job/dock_decorated/%s/err_%s\n'%(jobtype,string))
         w.write('# BSUB -q short\n')
         w.write('export OMP_NUM_THREADS=1\n')
         w.write('export PATH=$PATH:/home/yw174/usr/babel/bin/\n')
@@ -36,7 +36,7 @@ def submit_one_job(job_suffix,jobtype,pdb,resid):
 
 
 if __name__=='__main__':
-    filelist = get_file_list()[1024:1030]
+    filelist = get_file_list()[2000:4000]
     for filename in filelist:
         pdb = filename.split('_')[0]
         resid = filename.split('_')[1]
