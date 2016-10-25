@@ -138,7 +138,7 @@ class pdb_container:
         copy_pdbfile(filepos, pdb_store_dir+'/{0}.pdb'.format(PDB), zipped=filepos.split('.')[-1] == 'gz')
 
         #repair by guess, i think
-        repair_pdbfile(pdb_store_dir+'/{0}.pdb'.format(PDB), PDB)
+        #repair_pdbfile(pdb_store_dir+'/{0}.pdb'.format(PDB), PDB)
         #Generating sequence here
         #storage = []
         #split files by chain
@@ -774,4 +774,5 @@ class pdb_container:
 
     def __del__(self):
         files = os.path.join(temp_pdb_PREFIX, self.PDBname)
-        os.system('rm -r ' + files)
+        if os.path.exists(files):
+            os.system('rm -r ' + files)
