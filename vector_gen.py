@@ -800,6 +800,10 @@ class fake_pdb_container:
             os.mkdir('data/'+PDB)
         pd.writePDB('data/{0}/{0}.pdb'.format(PDB),parse)
 
+        receptor = parse.select('protein')
+        pd.writePDB('data/{0}/{0}_hydro_receptor.pdb'.format(PDB), receptor)
+        repair_pdbfile('data/{0}/{0}_hydro_receptor.pdb'.format(PDB),PDB)
+
         hetero = parse.select('(hetero and not water) or resname ATP or resname ADP')
 
         for pick_one in pd.HierView(hetero).iterResidues():

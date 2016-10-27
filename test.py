@@ -25,12 +25,17 @@ from job_dispatcher import dock_dispatcher
 #    if filename.split('.')[-1]=='pdb':
 #        a.append_vectors(os.path.join(fake_hetero_PREFIX,filename))
 
-#def quick_split(pdb):
-#    pdb = pdb.lower()
-#    fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
+def quick_split(pdb):
+    pdb = pdb.lower()
+    fake_pdb_container(pdb,filepos=os.path.join(pdb_PREFIX,pdb+'.pdb.gz'))
 
-#quick_split('1avd')
+from source import PDB_protein_tar
+for PDB in PDB_protein_tar[0:100]:
+    quick_split(PDB.lower())
 
+quick_split('1avd')
+
+'''
 config = {
     'jobname': 'fast',
     'filedir': '/media/wy/data/fast/',
@@ -40,3 +45,4 @@ config = {
 A= dock_dispatcher(jobname='rigor',filedir= '/media/wy/data/rigor/', benchmark= '/media/wy/data/benchmark/')
 
 A.do_one_ligand('1jdc','419')
+'''
