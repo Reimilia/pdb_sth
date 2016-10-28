@@ -464,32 +464,32 @@ class pdb_container:
             #print filename2
             # Do autogrid mapgeneration:
             if src_ResId is None:
-                ligand_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' +ResId +'/' + naming + '_ligand.pdb')
-                receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_receptor.pdb')
-                complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/'+ResId +'/' + naming + '_complex.pdb')
+                ligand_filename = os.path.join(pdb_store_dir, ResId +'/' + naming + '_ligand.pdb')
+                receptor_filename = os.path.join(pdb_store_dir, ResId +'/' + naming + '_receptor.pdb')
+                complex_filename = os.path.join(pdb_store_dir, ResId +'/' + naming + '_complex.pdb')
             else:
                 ligand_filename = self.heterodict[ResId]['filename']
-                receptor_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + src_ResId + '/' + naming + '_receptor.pdb')
-                complex_filename = os.path.join(temp_pdb_PREFIX, PDB + '/' + src_ResId + '/' + naming + '_complex.pdb')
+                receptor_filename = os.path.join(pdb_store_dir, src_ResId + '/' + naming + '_receptor.pdb')
+                complex_filename = os.path.join(pdb_store_dir, src_ResId + '/' + naming + '_complex.pdb')
 
             fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
 
             self.heterodict[ResId]['vina_score'] = 'NA'
         except:
-            self.heterodict[ResId]['vina_score'] = do_auto_vina_score(receptor_filename, ligand_filename, middle)
+            self.heterodict[ResId]['vina_score'] = do_auto_vina_score(os.path.join(pdb_store_dir, src_ResId),receptor_filename, ligand_filename, middle)
             return
 
         box_num = int(np.ceil(self.BOX_range / self.BOX_size))
         print box_num
 
         try:
-            self.heterodict[ResId]['vina_score']=do_auto_vina_score(receptor_filename, ligand_filename, middle)
+            self.heterodict[ResId]['vina_score']=do_auto_vina_score(os.path.join(pdb_store_dir, src_ResId),receptor_filename, ligand_filename, middle)
             if score_only==False:
-                self.heterodict[ResId]['gridmap_protein'] = do_auto_grid(receptor_filename, fake_ligand_filename,
+                self.heterodict[ResId]['gridmap_protein'] = do_auto_grid(os.path.join(pdb_store_dir, src_ResId),receptor_filename, fake_ligand_filename,
                                                                      center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
-                self.heterodict[ResId]['gridmap_ligand'] = do_auto_grid(ligand_filename, fake_ligand_filename,
+                self.heterodict[ResId]['gridmap_ligand'] = do_auto_grid(os.path.join(pdb_store_dir, src_ResId),ligand_filename, fake_ligand_filename,
                                                                     center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
-                self.heterodict[ResId]['gridmap_complex'] = do_auto_grid(complex_filename, fake_ligand_filename,
+                self.heterodict[ResId]['gridmap_complex'] = do_auto_grid(os.path.join(pdb_store_dir, src_ResId),complex_filename, fake_ligand_filename,
                                                                      center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
         except:
             return
@@ -728,7 +728,7 @@ class pdb_container:
             else:
                 filename = "".join(fixfilename.split('.')[:-1])
                 filename = filename + "_"
-            filedir = os.path.join(temp_pdb_PREFIX,pdbname+'/'+residue_index+'/'+filename)
+            filedir = os.path.join(self.store_dir,residue_index+'/'+filename)
             ls =os.popen('babel {} -opdb {}.pdb -m'.format(ligand_file,filedir))
             os.system('babel {} -omol2 {}.mol -m'.format(ligand_file, filedir))
 
@@ -736,10 +736,10 @@ class pdb_container:
                 result_filename= os.path.join(result_PREFIX,filename[:-1]+'.mol')
             else:
                 result_filename = os.path.join(result_PREFIX, suffix+'/'+ filename[:-1] + '.mol')
-            if os.path.exists(result_filename):
-                if os.path.getsize(result_filename) > 10000:
-                    print '%s_%s already done!' % (pdbname,residue_index)
-                    return
+            #if os.path.exists(result_filename):
+            #    if os.path.getsize(result_filename) > 10000:
+            #        print '%s_%s already done!' % (pdbname,residue_index)
+            #        return
 
             with open(result_filename,'wb') as w:
                 for i in range(count):
@@ -776,6 +776,6 @@ class pdb_container:
         print self.PDBname+'({} hetero parts found)'.format(len(self.heterodict.keys()))
 
     def __del__(self):
-        files = os.path.join(temp_pdb_PREFIX, self.PDBname)
+        files = self.store_dir
         if os.path.exists(files):
             os.system('rm -r ' + files)

@@ -122,9 +122,6 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     :param OVERWRITE:
     :return:
     '''
-    real_dir = temp_pdb_PREFIX
-    real_filepos= os.path.join(real_dir,pdbname+'/'+pdbname+'.pdb')
-
 
     #os.chdir(CURRENT_DIR)
     #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
@@ -153,8 +150,7 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
     #return os.path.join(os.getcwd(),real_filepos)
     return filename
 
-
-def prepare_receptor(filename,pdbname,pdbresid='',OVERWRITE=True,repair=False):
+def prepare_receptor(filedir,filename,pdbname,pdbresid='',OVERWRITE=True,repair=False):
     '''
     prepare receptor pdbqt files
     :param filename: the file name
@@ -165,7 +161,7 @@ def prepare_receptor(filename,pdbname,pdbresid='',OVERWRITE=True,repair=False):
     if filename.split('.')[-1]!='pdb':
         print 'Error! when prepare receptor'
         return False
-    real_dir = os.path.join(os.path.join(autodock_store_dir,pdbname),pdbresid)
+    real_dir = filedir
     real_filepos= os.path.join(real_dir,filename.split('/')[-1])+'qt'
     if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
@@ -185,7 +181,7 @@ def prepare_receptor(filename,pdbname,pdbresid='',OVERWRITE=True,repair=False):
     return True
 
 
-def prepare_ligand(filename,pdbname,pdbresid='',OVERWRITE=False):
+def prepare_ligand(filedir,filename,pdbname,pdbresid='',OVERWRITE=False):
     '''
     prepare ligand pdbqt files ( note different from receptor's)
     :param filename: the file name
@@ -197,7 +193,7 @@ def prepare_ligand(filename,pdbname,pdbresid='',OVERWRITE=False):
     if filename.split('.')[-1]!='pdb':
         print 'Error! when prepare ligand'
         return False
-    real_dir = os.path.join(os.path.join(autodock_store_dir,pdbname),pdbresid)
+    real_dir =  filedir
     real_filepos = os.path.join(real_dir, filename.split('/')[-1]) + 'qt'
     if not os.path.exists(real_filepos) or OVERWRITE:
         os.chdir(CURRENT_DIR)
@@ -212,7 +208,7 @@ def prepare_ligand(filename,pdbname,pdbresid='',OVERWRITE=False):
     return True
 
 @fn_timer
-def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_num=21):
+def do_auto_grid(filedir,receptor,ligand,center=None,BOX_size=1,BOX_num=21):
     #extract names
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
@@ -224,7 +220,7 @@ def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_num=21):
 
     #prepare receptor
     if rname.split('.')[-1]=='pdb':
-        if not prepare_receptor(receptor,pdbname,pdbresid):
+        if not prepare_receptor(filedir,receptor,pdbname,pdbresid):
             return False
         rname+='qt'
     else:
@@ -233,7 +229,7 @@ def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_num=21):
 
     #prepare ligand
     if lname.split('.')[-1] == 'pdb':
-        if not prepare_ligand(ligand,pdbname,pdbresid):
+        if not prepare_ligand(filedir,ligand,pdbname,pdbresid):
             return False
         lname+='qt'
     else:
@@ -242,7 +238,7 @@ def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_num=21):
 
     # get absolute names and locations
     naming = "".join(rname.split('.')[:-1])
-    real_dir = os.path.join(os.path.join(autodock_store_dir,pdbname),pdbresid)
+    real_dir = filedir
     glg_output_dir = os.path.join(real_dir,naming)
 
     rloc = os.path.join(real_dir,rname)
@@ -286,7 +282,7 @@ def do_auto_grid(receptor,ligand,center=None,BOX_size=1,BOX_num=21):
 
 
 @fn_timer
-def do_auto_dock(receptor,ligand,center=None):
+def do_auto_dock(filedir,receptor,ligand,center=None):
     rname = receptor.split('/')[-1]
     lname = ligand.split('/')[-1]
     pdbname = rname.split('_')[0]
@@ -296,7 +292,7 @@ def do_auto_dock(receptor,ligand,center=None):
         return False
 
     #first prepare auto_grid maps
-    do_auto_grid(receptor,ligand,center)
+    do_auto_grid(filedir,receptor,ligand,center)
 
     #prepare receptor
     if rname.split('.')[-1] == 'pdb':
@@ -321,11 +317,11 @@ def do_auto_dock(receptor,ligand,center=None):
     #Because some scripts can only detect files in their direction
     #which is not a good news
     naming = "".join(rname.split('.')[:-1])
-    real_dir = os.path.join(os.path.join(autodock_store_dir,pdbname), pdbresid )
-    dlg_output_dir = os.path.join(real_dir, naming)
+    filedir = receptor.split('/')[:-1]
+    dlg_output_dir = os.path.join(filedir, naming)
 
-    rloc = os.path.join(real_dir, rname)
-    lloc = os.path.join(real_dir, lname)
+    rloc = os.path.join(filedir, rname)
+    lloc = os.path.join(filedir, lname)
 
     #prepare dpf files
     cmd=os.path.join(pythonsh_dir,'pythonsh') + \
@@ -337,7 +333,7 @@ def do_auto_dock(receptor,ligand,center=None):
         return False
 
     # Suppose autogrid and autodock has installed
-    os.chdir(real_dir)
+    os.chdir(filedir)
     # Do real auto dock
     cmd = 'autodock4 -p {0}.dpf -l {0}.dlg'.format(naming)
     stat, out = commands.getstatusoutput(cmd)
@@ -350,7 +346,7 @@ def do_auto_dock(receptor,ligand,center=None):
 
 
 @fn_timer
-def do_auto_vina_score(receptor,ligand,center,Box=20):
+def do_auto_vina_score(filedir,receptor,ligand,center,Box=20):
     # receptor_file_loc = os.path.join('data/',self.PDBname+'_{}_2.pdb'.format(ResId))
     #extract filename we want
     rname = receptor.split('/')[-1]
@@ -380,7 +376,7 @@ def do_auto_vina_score(receptor,ligand,center,Box=20):
 
     #print 'here'
     # get the absolute location
-    real_dir = os.path.join(os.path.join(autodock_store_dir,pdbname), pdbresid )
+    real_dir = filedir
     os.chdir(real_dir)
     # write config files
     with open('vina_config.txt', 'w') as f:
