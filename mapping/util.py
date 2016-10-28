@@ -128,7 +128,6 @@ def repair_pdbfile(filename,pdbname,OVERWRITE=False):
 
     #os.chdir(CURRENT_DIR)
     #cmd =os.path.join(pythonsh_dir, 'pythonsh') + ' prepare_receptor4.py -v -r {0} -o {0}qt -A bonds_hydrogens -U nphs_lps_waters'.format(real_filepos)
-    cmd ='babel -d {} {} '.format(filename, filename)
     cmd ='babel -h {} {} '.format(filename,filename)
     stat ,out = commands.getstatusoutput(cmd)
 

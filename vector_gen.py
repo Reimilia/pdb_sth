@@ -94,8 +94,11 @@ class pdb_container:
         else:
             self.BOX_size = 1
 
-
-        pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB)
+        if filepos is None:
+            pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB)
+        else:
+            pdb_store_dir = os.path.join(temp_pdb_PREFIX, PDB+''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16))))
+        self.store_dir =pdb_store_dir
 
         if not os.path.exists(pdb_store_dir):
             os.mkdir(pdb_store_dir)
@@ -138,7 +141,7 @@ class pdb_container:
         copy_pdbfile(filepos, pdb_store_dir+'/{0}.pdb'.format(PDB), zipped=filepos.split('.')[-1] == 'gz')
 
         #repair by guess, i think
-        #repair_pdbfile(pdb_store_dir+'/{0}.pdb'.format(PDB), PDB)
+        repair_pdbfile(pdb_store_dir+'/{0}.pdb'.format(PDB), PDB)
         #Generating sequence here
         #storage = []
         #split files by chain
@@ -202,7 +205,7 @@ class pdb_container:
         else:
             ResId = compare_ResId_native + '_' + str(Id_suffix)
 
-        pdb_store_dir = os.path.join(temp_pdb_PREFIX, PDB)
+        pdb_store_dir = self.store_dir
         other = self.receptor
         # Extract this ligand from protein (as input for openbabel)
 
@@ -444,7 +447,7 @@ class pdb_container:
             naming = '{}_{}'.format(PDB, ResId)
             middle= self.heterodict[ResId]['center']
             self.heterodict[ResId]['file_generated'] = True
-            pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB)
+            pdb_store_dir = self.store_dir
             #prepare files:
             if src_ResId is not None:
                 filename2 = pdb_store_dir+'/{}/{}_{}_receptor.pdb'.format(src_ResId, PDB, ResId)
@@ -734,7 +737,7 @@ class pdb_container:
             else:
                 result_filename = os.path.join(result_PREFIX, suffix+'/'+ filename[:-1] + '.mol')
             if os.path.exists(result_filename):
-                if os.path.getsize(result_filename) > 1024:
+                if os.path.getsize(result_filename) > 10000:
                     print '%s_%s already done!' % (pdbname,residue_index)
                     return
 
