@@ -10,7 +10,7 @@ import time
 import re
 import commands
 from Autodock_Config import autodock_store_dir,pythonsh_dir
-from Config import temp_pdb_PREFIX
+temp_pdb_PREFIX = '/n/scratch2/yw174/structure_data'
 import gzip
 
 WORK_DIR = os.getcwd()
