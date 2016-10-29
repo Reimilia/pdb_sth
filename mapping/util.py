@@ -296,7 +296,7 @@ def do_auto_dock(filedir,receptor,ligand,center=None):
 
     #prepare receptor
     if rname.split('.')[-1] == 'pdb':
-        if not prepare_receptor(receptor,pdbname,pdbresid):
+        if not prepare_receptor(filedir,receptor,pdbname,pdbresid):
             return False
         rname += 'qt'
     else:
@@ -305,7 +305,7 @@ def do_auto_dock(filedir,receptor,ligand,center=None):
 
     #prepare ligand
     if lname.split('.')[-1] == 'pdb':
-        if not prepare_ligand(ligand,pdbname,pdbresid):
+        if not prepare_ligand(filedir,ligand,pdbname,pdbresid):
             return False
         lname += 'qt'
     else:
@@ -357,7 +357,7 @@ def do_auto_vina_score(filedir,receptor,ligand,center,Box=20):
     if not os.path.exists(receptor) or not os.path.exists(ligand):
         return 'NA'
     if rname.split('.')[-1]=='pdb':
-        if not prepare_receptor(receptor,pdbname,pdbresid):
+        if not prepare_receptor(filedir,receptor,pdbname,pdbresid):
             return 'NA'
         rname+='qt'
     else:
@@ -367,7 +367,7 @@ def do_auto_vina_score(filedir,receptor,ligand,center,Box=20):
     #prepare ligand
     if lname.split('.')[-1] == 'pdb':
         #print 'here'
-        if not prepare_ligand(ligand,pdbname,pdbresid,OVERWRITE=True):
+        if not prepare_ligand(filedir,ligand,pdbname,pdbresid,OVERWRITE=True):
             return 'NA'
         lname+='qt'
     else:
