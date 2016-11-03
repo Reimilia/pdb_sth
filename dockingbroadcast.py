@@ -32,7 +32,6 @@ rigorso_dir = '/n/scratch2/xl198/data/H/so_rigorous'
 random_dir = ''
 benchmark_dir = '/n/scratch2/xl198/data/H/addH'
 
-fast_job = dock_dispatcher(jobname='fast', filedir=fast_dir, benchmark=benchmark_dir)
 rigor_job = dock_dispatcher(jobname='rigor', filedir=rigor_dir, benchmark=benchmark_dir)
 rigorso_job = dock_dispatcher(jobname='rigor_so', filedir=rigorso_dir, benchmark=benchmark_dir)
 
@@ -59,7 +58,7 @@ if __name__ == '__main__':
     #and you will see multiprocessing
     if comm_rank == 0:
         # the No.0 one hand out issues
-        file_list = get_file_list()[:2000]
+        file_list = get_file_list()[:-20000]
         file_num = len(file_list)
         sys.stderr.write("%d files\n" % len(file_list))
     else:
@@ -78,4 +77,5 @@ for file_name in local_files:
     pdb = file_name.split('_')[0]
     resid = file_name.split('_')[1].rstrip('\n')
     print 'try to do %s_%s'%(pdb,resid)
+    fast_job = dock_dispatcher(jobname='fast', filedir=fast_dir, benchmark=benchmark_dir)
     fast_job.do_one_ligand(pdb, resid)

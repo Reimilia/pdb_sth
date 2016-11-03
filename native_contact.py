@@ -1,9 +1,5 @@
 import numpy as np
 
-maximum = 4.5
-minimum = 3
-
-
 def make_pair(x, y):
     xx, yy = np.meshgrid(range(len(x)), range(len(y)))
     return np.c_[xx.ravel(), yy.ravel()]
@@ -38,11 +34,14 @@ def native_contact(receptor, native, ligands):
                     numpy array in shape of (m)
     '''
 
+    maximum_distance = 4.5
+    minimum_distance = 3
+
     pairs = make_pair(receptor, native)
     pairs_distance = compute_distance(receptor, native, pairs)
-    pairs_distance[pairs_distance > maximum] = minimum
-    native_contact_pair = pairs[pairs_distance > minimum]
+    pairs_distance[pairs_distance > maximum_distance] = minimum_distance
+    native_contact_pair = pairs[pairs_distance > minimum_distance]
     native_contacts = np.array(
-        [compute_native_contact(receptor, ligand, native_contact_pair, maximum, minimum) for ligand in ligands])
+        [compute_native_contact(receptor, ligand, native_contact_pair, maximum_distance, minimum_distance) for ligand in ligands])
     print native_contacts
     return native_contacts

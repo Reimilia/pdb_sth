@@ -18,15 +18,15 @@ def submit_one_job(job_suffix,jobtype,pdb,resid):
     with open('dock.sh', 'w') as w:
         w.write('# !/bin/bash\n')
         w.write('# BSUB -n 1\n')
-        w.write('# BSUB -W 8:00\n')
+        w.write('# BSUB -W 3:00\n')
         w.write('# BSUB -J dock_%s\n'%(string))
-        w.write('# BSUB -o /home/yw174/job/dock_decorated/%s/out_%s\n'%(jobtype,string))
-        w.write('# BSUB -e /home/yw174/job/dock_decorated/%s/err_%s\n'%(jobtype,string))
+        w.write('# BSUB -o /home/mdk24/job/dock_decorated/%s/out_%s\n'%(jobtype,string))
+        w.write('# BSUB -e /home/mdk24/job/dock_decorated/%s/err_%s\n'%(jobtype,string))
         w.write('# BSUB -q short\n')
         w.write('export OMP_NUM_THREADS=1\n')
         w.write('export PATH=$PATH:/home/yw174/usr/babel/bin/\n')
         w.write('source /home/yw174/python_env/wy/bin/activate\n')
-        w.write('cd /home/yw174/program/pdb_sth\n')
+        w.write('cd /home/mdk24/wy_program/pdb_sth\n')
         cmd = 'python job_dispatcher.py %s %s %s'%(jobtype,pdb,resid)
         w.write(cmd + '\n')
     os.system('chmod 777 dock.sh')
@@ -40,7 +40,7 @@ if __name__=='__main__':
         time.sleep(60)
         command=os.popen('bjobs | grep short | wc -l')
         ls = int(command.read())
-        while ls<300:
+        while ls<1000:
             if index>=len(filelist):
                 break
             filename=filelist[index]
