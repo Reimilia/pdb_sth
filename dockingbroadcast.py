@@ -76,6 +76,6 @@ if __name__ == '__main__':
 # Do seperately
 for file_name in local_files:
     pdb = file_name.split('_')[0]
-    resid = file_name.split('_')[1]
+    resid = file_name.split('_')[1].rstrip('\n')
     print 'try to do %s_%s'%(pdb,resid)
     fast_job.do_one_ligand(pdb, resid)

@@ -18,7 +18,7 @@ def submit_one_job(job_suffix,jobtype,pdb,resid):
     with open('dock.sh', 'w') as w:
         w.write('# !/bin/bash\n')
         w.write('# BSUB -n 1\n')
-        w.write('# BSUB -W 5:00\n')
+        w.write('# BSUB -W 8:00\n')
         w.write('# BSUB -J dock_%s\n'%(string))
         w.write('# BSUB -o /home/yw174/job/dock_decorated/%s/out_%s\n'%(jobtype,string))
         w.write('# BSUB -e /home/yw174/job/dock_decorated/%s/err_%s\n'%(jobtype,string))
@@ -40,14 +40,17 @@ if __name__=='__main__':
         time.sleep(60)
         command=os.popen('bjobs | grep short | wc -l')
         ls = int(command.read())
-        while ls<100:
+        while ls<300:
+            if index>=len(filelist):
+                break
             filename=filelist[index]
             index+=1
             pdb = filename.split('_')[0]
-            resid = filename.split('_')[1]
+            resid = filename.split('_')[1].rstrip('\n')
             submit_one_job('fast','fast',pdb, resid)
-            submit_one_job('rigor','rigor',pdb, resid)
-            submit_one_job('rigor_so', 'rigor_so', pdb, resid)
+            #submit_one_job('rigor','rigor',pdb, resid)
+            #submit_one_job('rigor_so', 'rigor_so', pdb, resid)
             ls+=3
-
+        if index>=len(filelist):
+            break
 

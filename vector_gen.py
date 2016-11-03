@@ -97,7 +97,7 @@ class pdb_container:
         if filepos is None:
             pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB)
         else:
-            pdb_store_dir = os.path.join(temp_pdb_PREFIX, PDB+''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16))))
+            pdb_store_dir = os.path.join(temp_pdb_PREFIX,PDB+''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16))))
         self.store_dir =pdb_store_dir
 
         if not os.path.exists(pdb_store_dir):
@@ -440,8 +440,8 @@ class pdb_container:
 
     def bundle_autodock_file(self,ResId,score_only=False,src_ResId=None):
 
-        if self.heterodict[ResId]['file_generated']==True:
-            return
+        #if self.heterodict[ResId]['file_generated']==True:
+        #    return
         try:
             PDB= self.PDBname
             naming = '{}_{}'.format(PDB, ResId)
@@ -453,6 +453,7 @@ class pdb_container:
                 filename2 = pdb_store_dir+'/{}/{}_{}_receptor.pdb'.format(src_ResId, PDB, ResId)
             else:
                 filename2 = pdb_store_dir+'/{1}/{0}_{1}_receptor.pdb'.format(PDB, ResId)
+            print filename2
             pd.writePDB(filename2, self.heterodict[ResId]['protein'])
             # pdb_to_mol2(filename2, ''.join(filename2.split('.')[:-2]) + '.mol')
             if src_ResId is not None:
@@ -460,7 +461,9 @@ class pdb_container:
             else:
                 filename2 = pdb_store_dir+'/{1}/{0}_{1}_complex.pdb'.format(PDB, ResId)
             if score_only==False:
-                pd.writePDB(filename2, self.heterodict[ResId]['protein'] + self.heterodict[ResId]['ligand'])
+                pd.saveAtoms(self.heterodict[ResId]['protein'], filename=os.path.join(pdb_store_dir,'temp.ag.npz'))
+                atomgroup = pd.loadAtoms(os.path.join(pdb_store_dir,'temp.ag.npz'))
+                pd.writePDB(filename2, self.heterodict[ResId]['ligand'] + atomgroup)
             #print filename2
             # Do autogrid mapgeneration:
             if src_ResId is None:
@@ -473,18 +476,20 @@ class pdb_container:
                 complex_filename = os.path.join(pdb_store_dir, src_ResId + '/' + naming + '_complex.pdb')
 
             fake_ligand_filename = os.path.join(temp_pdb_PREFIX, 'fake-ligand.pdb')
+            self.heterodict[ResId]['vina_score'] = do_auto_vina_score(os.path.join(pdb_store_dir, src_ResId),
+                                                                      receptor_filename, ligand_filename, middle)
 
-            self.heterodict[ResId]['vina_score'] = 'NA'
+
         except:
-            self.heterodict[ResId]['vina_score'] = do_auto_vina_score(os.path.join(pdb_store_dir, src_ResId),receptor_filename, ligand_filename, middle)
+            self.heterodict[ResId]['vina_score'] = 'NA'
             return
 
         box_num = int(np.ceil(self.BOX_range / self.BOX_size))
         print box_num
 
         try:
-            self.heterodict[ResId]['vina_score']=do_auto_vina_score(os.path.join(pdb_store_dir, src_ResId),receptor_filename, ligand_filename, middle)
             if score_only==False:
+                print 'here'
                 self.heterodict[ResId]['gridmap_protein'] = do_auto_grid(os.path.join(pdb_store_dir, src_ResId),receptor_filename, fake_ligand_filename,
                                                                      center=middle, BOX_size=self.BOX_size,BOX_num=box_num)
                 self.heterodict[ResId]['gridmap_ligand'] = do_auto_grid(os.path.join(pdb_store_dir, src_ResId),ligand_filename, fake_ligand_filename,
@@ -599,7 +604,6 @@ class pdb_container:
         Remark_dict = collections.OrderedDict()
         self.bundle_autodock_file(ResId, score_only=True, src_ResId=src_ResId)
 
-
         Remark_dict['PDBname'] = self.PDBname
         Remark_dict['PDBResId'] = dict['id']
         Remark_dict['center'] = list_formatter(dict['center'])
@@ -621,7 +625,7 @@ class pdb_container:
         return Remark_dict
 
 
-    def bundle_result(self,ResId,score_only=False):
+    def bundle_result(self,ResId,score_only=False,src_ResId=None):
         '''
         Render results into full vectors which contains info from pdbs
         With the order:
@@ -633,8 +637,9 @@ class pdb_container:
         info_line=[]
         self.pdb_type = self.get_pdb_type()
 
-        self.bundle_autodock_file(ResId,score_only)
+        self.bundle_autodock_file(ResId,score_only,src_ResId=src_ResId)
         #self.create_patch_file(ResId,dir='PDB')
+        naming = '%s_%s' %(self.PDBname,ResId)
 
         dict = self.heterodict[ResId]
         info_line.append(self.PDBname)
@@ -655,24 +660,30 @@ class pdb_container:
         info_line.append(self.sequence)
         info_line.append(list_formatter(dict['raw_vector']))
 
+        if src_ResId is not None:
+            store_dir = os.path.join(self.store_dir,src_ResId)
+        else:
+            store_dir = os.path.join(self.store_dir,ResId)
+
         if dict['gridmap_protein']!='NA':
             #for index in range(8):
             #    info_line.append(self.PDBname+'_'+dict['id']+'_receptor.'+electype[index]+'.map')
-            info_line += map(list_formatter,fetch_gridmaps(self.PDBname+'_'+dict['id']+'_receptor'))
+            info_line += map(list_formatter,fetch_gridmaps(store_dir,naming+'_receptor'))
         else:
             info_line+= ['NA']*8
 
         if dict['gridmap_ligand']!='NA':
             #for index in range(8):
             #    info_line.append(self.PDBname+'_'+dict['id']+'_ligand.'+electype[index]+'.map')
-            info_line += map(list_formatter,fetch_gridmaps(self.PDBname+'_'+dict['id']+'_receptor'))
+            print dict['filename'][:-3]
+            info_line += map(list_formatter,fetch_gridmaps(store_dir,dict['filename'][:-4]))
         else:
             info_line+= ['NA']*8
 
         if dict['gridmap_complex']!='NA':
             #for index in range(8):
             #    info_line.append(self.PDBname+'_'+dict['id']+'_complex.'+electype[index]+'.map')
-            info_line += map(list_formatter,fetch_gridmaps(self.PDBname+'_'+dict['id']+'_receptor'))
+            info_line += map(list_formatter,fetch_gridmaps(store_dir,naming+'_complex'))
         else:
             info_line+= ['NA']*8
 
@@ -729,7 +740,8 @@ class pdb_container:
                 filename = "".join(fixfilename.split('.')[:-1])
                 filename = filename + "_"
             filedir = os.path.join(self.store_dir,residue_index+'/'+filename)
-            ls =os.popen('babel {} -opdb {}.pdb -m'.format(ligand_file,filedir))
+            print 'babel {} -opdb {}.pdb -m'.format(ligand_file,filedir)
+            os.system('babel {} -opdb {}.pdb -m'.format(ligand_file,filedir))
             os.system('babel {} -omol2 {}.mol -m'.format(ligand_file, filedir))
 
             if suffix is None:
@@ -743,6 +755,9 @@ class pdb_container:
 
             with open(result_filename,'wb') as w:
                 for i in range(count):
+                    print i
+                    if i>=1:
+                        break
                     self.add_ligand(filedir+str(i+1)+'.pdb',ResIndex=residue_index,count_index=i+1,benchmark=bench_coord)
                     pdbdict = self.bundle_result_dict(residue_index+'_'+str(i+1),src_ResId= residue_index)
                     #print pdbdict
@@ -779,3 +794,4 @@ class pdb_container:
         files = self.store_dir
         if os.path.exists(files):
             os.system('rm -r ' + files)
+

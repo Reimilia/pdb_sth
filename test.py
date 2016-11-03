@@ -6,11 +6,11 @@ from fileparser import do_one_pdb
 from Config import *
 import os,sys,io
 import gzip
-from vector_gen import pdb_container,fake_pdb_container
+from vector_gen import pdb_container
 from prody import *
 from mapping import *
 
-
+'''
 N=11549
 
 prefix = '/home/yw174/pdb_data/addHdata'
@@ -37,9 +37,19 @@ for i in range(N):
 print 'Succ: {}, Fail: {}'.format(Succ,Fail)
 
 '''
+'''
 
 A= pdb_container('1avd',filepos='media/wy/data/pdb_raw/1avd.pdb.gz')
 
 filename= 'media/wy/data/fast/1avd/1avd_248_ligand.pdb'
 A.add_ligands(filename,'fast')
 '''
+
+
+if __name__=='__main__':
+    fast_dir = '/media/wy/data/fast/1avd/1avd_248_ligand.mol2'
+    bench_dir = '/media/wy/data/benchmark/1avd/1avd_248_ligand.pdb'
+    A= pdb_container('1avd',filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
+    A.add_ligands(fast_dir, suffix = 'fast', benchmark_file=bench_dir)
+    lis=A.bundle_result('248_1',src_ResId='248')
+    print lis[-9]

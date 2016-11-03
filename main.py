@@ -2,7 +2,7 @@ from Config import *
 import os
 import csv
 import logging
-from vector_gen import pdb_container,fake_pdb_container
+from vector_gen import pdb_container
 import time
 from functools import wraps
 import collections
@@ -269,7 +269,7 @@ def bindingDB_pdb_tar_generator(src,filepos,statistic_csv=None,CLEAN=False,filef
 
 
 @fn_timer
-def docking_mol2_generator(pdbname,docking_ligand_file,pdb_filepos=None,benchmark_file=None,suffix=None):
+def docking_csv_generator(pdbname,ligand_id):
     '''
 
     :param pdbname:
@@ -279,18 +279,51 @@ def docking_mol2_generator(pdbname,docking_ligand_file,pdb_filepos=None,benchmar
     :param suffix:
     :return:
     '''
-    if pdb_filepos is None:
-        pdb_filepos= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
+    job_dir = {
+        'fast': '/n/scratch2/xl198/data/H/wp_fast',
+        #'fast' : '/media/wy/data/fast/',
+        'rigor': '/n/scratch2/xl198/data/H/wp_rigorous',
+        'rigor_so': '/n/scratch2/xl198/data/H/so_rigorous',
+        'random': '',
+        'benchmark': '/n/scratch2/xl198/data/H/addH'
+        #'benchmark' : '/media/wy/data/benchmark'
+    }
+    real_result_dir = os.path.join(result_PREFIX,'temp')
+    result_file_name = '{}_{}'.format(pdbname, ligand_id) + '.csv'
+    filedir = os.path.join(real_result_dir, result_file_name)
 
-    A = pdb_container('1avd', filepos='/media/wy/data/pdb_raw/1avd.pdb.gz')
-    A.add_ligands('/media/wy/data/fast/1avd/1avd_248_ligand.mol2', suffix='fast',
-                  benchmark_file='/media/wy/data/fast/1avd/1avd_248_ligand.pdb')
+    writer = file(filedir, 'w')
+    w = csv.writer(writer)
+    w.writerow(experiment_part + PDB_part)
+
+    pdb_file_dir = os.path.join(pdb_PREFIX,pdbname+'.pdb.gz')
+    partial_name = pdbname + '/' + pdbname + '_' + ligand_id + '_ligand'
+
+    fast_dir = os.path.join(job_dir['fast'],partial_name+'.mol2')
+    rigor_dir= os.path.join(job_dir['rigor'],partial_name+'.mol2')
+    rigor_so_dir = os.path.join(job_dir['rigor_so'],partial_name+'.mol2')
+    bench_dir = os.path.join(job_dir['benchmark'],partial_name+'.pdb')
+
+    A = pdb_container(ligand_id, pdb_file_dir)
+    A.add_ligands(fast_dir, suffix='fast', benchmark_file=bench_dir)
+    pdb_list= A.bundle_result(ligand_id+'_1', src_ResId=ligand_id)
+    w.writerow(['']*len(experiment_part)+pdb_list)
+
+    A = pdb_container(ligand_id, pdb_file_dir)
+    A.add_ligands(rigor_dir, suffix='rigor', benchmark_file=bench_dir)
+    pdb_list = A.bundle_result(ligand_id + '_1', src_ResId=ligand_id)
+    w.writerow([''] * len(experiment_part) + pdb_list)
+
+    A = pdb_container(ligand_id, pdb_file_dir)
+    A.add_ligands(rigor_so_dir, suffix='rigor_so', benchmark_file=bench_dir)
+    pdb_list = A.bundle_result(ligand_id + '_1', src_ResId=ligand_id)
+    w.writerow([''] * len(experiment_part) + pdb_list)
+
+    writer.flush()
+    writer.close()
+
 
 
 if __name__ == '__main__':
 
-
-    for pdb in PDB_tar[0:1]:
-        pdb=pdb.lower()
-        filepath= os.path.join(pdb_PREFIX,pdb+'.pdb.gz')
-        bindingDB_pdb_tar_generator(pdb,filepath,statistic_csv='report.csv',CLEAN=True)
+    docking_csv_generator('1avd','248')

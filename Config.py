@@ -12,7 +12,7 @@ pdb_PREFIX = '/home/yw174/pdb_data/pdb_raw/'
 #pdb_PREFIX = '/media/wy/data/pdb_raw/'
 
 #where temporary pdb files are
-temp_pdb_PREFIX = '/n/scratch2/yw174/structure_data'
+temp_pdb_PREFIX = '/tmp'
 #temp_pdb_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/data'
 
 #where csv result files are
@@ -62,7 +62,8 @@ fake_result_PREFIX = '/media/wy/data/result/'
 #name of fake pdb files
 fake_pdb_name = 'fake-ligand.pdb'
 # Where to store autodock mapping results
-autodock_store_dir = '/n/scratch2/yw174/structure_data/'
+#autodock_store_dir = '/n/scratch2/yw174/structure_data/'
+autodock_store_dir = '/tmp'
 
 # Location of pythonsh environment MGLTools provide (because its python 2.5 and use some abandoned characteristics)
 # We need this filelocation to convert PDB to PDBqt in a quick way.

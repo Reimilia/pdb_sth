@@ -10,7 +10,8 @@ import time
 import re
 import commands
 from Autodock_Config import autodock_store_dir,pythonsh_dir
-temp_pdb_PREFIX = '/n/scratch2/yw174/structure_data'
+temp_pdb_PREFIX = '/tmp'
+#temp_pdb_PREFIX = '/home/wy/Documents/BCH_coding/pdb_data_extracter/data'
 import gzip
 
 WORK_DIR = os.getcwd()
@@ -439,7 +440,7 @@ def vector_from_gridmap(mapfilename,BOX=21):
     except:
         return 'NA'
 
-def fetch_gridmaps(map_prefix ,BOX=21):
+def fetch_gridmaps(filedir, map_prefix ,BOX=21):
     '''
     Convert group of gridmaps into vectors (8*21*21*21 for now)
     :param map_prefix: the file prefix , since autogrid's naming rules is same, so just provide anyname except .[].map
@@ -450,7 +451,7 @@ def fetch_gridmaps(map_prefix ,BOX=21):
     vectors= []
     try:
         for each in type:
-            real_dir = os.path.join(os.path.join(autodock_store_dir, map_prefix.split('_')[0]), map_prefix.split('_')[1])
+            real_dir = filedir
             real_pos= os.path.join(real_dir,map_prefix+'.'+each+'.map')
             vectors.append(vector_from_gridmap(real_pos,BOX=BOX))
         return vectors

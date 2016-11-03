@@ -10,6 +10,14 @@
           <option name="port" value="22" />
         </fileTransfer>
       </webServer>
+      <webServer id="6491473b-2a51-4bde-93e9-ce766f8ad004" name="Maksym" url="http://orchestra.med.harvard.edu">
+        <fileTransfer host="orchestra.med.harvard.edu" port="22" rootFolder="/home/mdk24" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

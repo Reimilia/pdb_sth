@@ -3,7 +3,7 @@ __author__ = 'wy'
 from prody import *
 import os
 import csv
-from vector_gen import pdb_container,fake_pdb_container
+from vector_gen import pdb_container
 import time
 from functools import wraps
 import logging
